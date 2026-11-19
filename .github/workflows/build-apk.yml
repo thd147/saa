@@ -19,9 +19,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Test logic (no Android SDK required)
+        run: |
+          mkdir -p tests/build
+          javac -d tests/build app/src/main/java/io/stairpilot/DecisionEngine.java app/src/main/java/io/stairpilot/PromptGate.java app/src/main/java/io/stairpilot/ModeProfile.java tests/DecisionEngineTest.java tests/PromptGateTest.java
+          java -cp tests/build DecisionEngineTest
+          java -cp tests/build PromptGateTest
       - name: Build
         run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: StairPilot-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

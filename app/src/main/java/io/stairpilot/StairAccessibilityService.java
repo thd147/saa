@@ -33,6 +33,7 @@ public final class StairAccessibilityService extends AccessibilityService {
     private TextView hint;
     private Bitmap frozenImage;
     private int step = 0;
+    private boolean eventWizard = false;
     private Handler ui;
     private final String[] prompts = {
         "1/9: 올라가기 버튼의 중앙을 터치",
@@ -74,7 +75,17 @@ public final class StairAccessibilityService extends AccessibilityService {
         bar.setOrientation(LinearLayout.VERTICAL);
         bar.setPadding(dp(3),dp(3),dp(3),dp(3));
         bar.setBackgroundColor(0xB9222930);
-        makeButton("보정", bar, v -> startWizard());
+        makeButton("계단 보정", bar, v -> startWizard());
+        makeButton("이벤트 버튼 학습", bar, v -> startEventWizard());
+        makeButton("모드 변경", bar, v -> {
+            Prefs prefs = new Prefs(this);
+            ModeProfile[] all = ModeProfile.values();
+            int i = (prefs.mode().ordinal()+1) % all.length;
+            ProjectionService p = ProjectionService.get();
+            if(p != null && p.isRunning()) p.pause("모드 변경 · 재시작 필요");
+            prefs.setMode(all[i]);
+            say("현재 모드: " + all[i].korean);
+        });
         makeButton("▶ 시작", bar, v -> {
             ProjectionService p = ProjectionService.get();
             if (p == null) { say("먼저 앱에서 화면 공유를 켜세요"); return; }
@@ -93,7 +104,8 @@ public final class StairAccessibilityService extends AccessibilityService {
         Runnable[] refresher=new Runnable[1];
         refresher[0]=() -> {
             if (toolbar == bar) {
-                liveStatus.setText(ProjectionService.status + "\n" + ProjectionService.lastScores);
+                liveStatus.setText(new Prefs(this).mode().korean + "\n" + ProjectionService.status
+                        + "\n" + ProjectionService.lastScores);
                 ui.postDelayed(refresher[0],600);
             }
         };
@@ -123,10 +135,19 @@ public final class StairAccessibilityService extends AccessibilityService {
         return p;
     }
     private void startWizard() {
+        eventWizard = false;
+        new Prefs(this).markCalibrated(false);
+        startFrozenWizard();
+    }
+    private void startEventWizard() {
+        eventWizard = true;
+        new Prefs(this).markEventPromptCalibrated(false);
+        startFrozenWizard();
+    }
+    private void startFrozenWizard() {
         ProjectionService service = ProjectionService.get();
         if (service == null) { say("앱에서 화면 공유를 먼저 시작하세요"); return; }
         service.pause("보정 준비 중");
-        new Prefs(this).markCalibrated(false);
         hideToolbar();
         step=0;
         // Capture with the control overlay removed to avoid training on our own UI.
@@ -148,7 +169,9 @@ public final class StairAccessibilityService extends AccessibilityService {
         backdrop.setScaleType(ImageView.ScaleType.FIT_XY);
         wizard.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));
         hint=new TextView(this);
-        hint.setText(prompts[0] + "\n고정된 화면에서 9곳을 지정하세요 (게임이 뒤에서 진행돼도 괜찮습니다)");
+        hint.setText(eventWizard
+                ? "이벤트 화면에서 '다시하기/계속' 등 안전한 버튼 중앙 1곳을 누르세요.\n결제·광고·보상 선택은 지정하지 마세요."
+                : prompts[0] + "\n고정된 화면에서 9곳을 지정하세요 (게임이 뒤에서 진행돼도 괜찮습니다)");
         hint.setTextSize(16);
         hint.setTextColor(Color.WHITE);
         hint.setBackgroundColor(0xDD151515);
@@ -176,6 +199,16 @@ public final class StairAccessibilityService extends AccessibilityService {
     }
     private void onWizardTap(int x, int y) {
         if (frozenImage == null) return;
+        if (eventWizard) {
+            ProjectionService p = ProjectionService.get();
+            boolean learned = p != null && p.learnEventPrompt(frozenImage,x,y);
+            if(wizard != null) { windowManager.removeView(wizard); wizard = null; }
+            frozenImage = null;
+            showToolbar();
+            say(learned ? "버튼 학습 완료! 앱에서 이벤트 자동 누르기 켜세요"
+                    : "버튼 학습 실패 · 무늬나 글자가 보이는 버튼을 선택하세요");
+            return;
+        }
         if (step < 8) {
             new Prefs(this).savePoint(step, x, y, frozenImage.getWidth(), frozenImage.getHeight());
             step++;
@@ -199,10 +232,14 @@ public final class StairAccessibilityService extends AccessibilityService {
 
     /** Send a single gesture, report success after system acknowledgement. */
     public void tap(int x, int y, Consumer<Boolean> done) {
+        tap(x, y, 35, done);
+    }
+    public void tap(int x, int y, int durationMs, Consumer<Boolean> done) {
         Path path = new Path();
         path.moveTo(x, y);
         GestureDescription gesture = new GestureDescription.Builder()
-                .addStroke(new GestureDescription.StrokeDescription(path, 0, 45)).build();
+                .addStroke(new GestureDescription.StrokeDescription(path, 0,
+                        Math.max(15, Math.min(95, durationMs)))).build();
         boolean sent = dispatchGesture(gesture, new GestureResultCallback() {
             @Override public void onCompleted(GestureDescription g) { done.accept(true); }
             @Override public void onCancelled(GestureDescription g) { done.accept(false); }

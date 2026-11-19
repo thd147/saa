@@ -15,10 +15,22 @@ public final class VisualMatcher {
     public static final int TEMPLATE_W = 22, TEMPLATE_H = 14;
     private byte[] pattern;
     private int pw, ph;
+    private double sampledSum, sampledSquares;
+    private int sampledCount;
+    private void prepareSampleStats() {
+        sampledSum = 0d; sampledSquares = 0d; sampledCount = 0;
+        if(!ready()) return;
+        for(int j=0;j<ph;j+=2) for(int i=0;i<pw;i+=2) {
+            int value = pattern[j*pw+i] & 255;
+            sampledSum += value; sampledSquares += value*value; sampledCount++;
+        }
+    }
 
     private static int gray(Image.Plane plane, int x, int y) {
-        ByteBuffer data = plane.getBuffer();
-        int pos = y * plane.getRowStride() + x * plane.getPixelStride();
+        return gray(plane.getBuffer(), plane.getRowStride(), plane.getPixelStride(), x, y);
+    }
+    private static int gray(ByteBuffer data, int rowStride, int pixelStride, int x, int y) {
+        int pos = y * rowStride + x * pixelStride;
         int r = data.get(pos) & 255;
         int g = data.get(pos + 1) & 255;
         int b = data.get(pos + 2) & 255;
@@ -41,6 +53,7 @@ public final class VisualMatcher {
             out.writeInt(TEMPLATE_W); out.writeInt(TEMPLATE_H); out.write(values);
         }
         pattern = values; pw = TEMPLATE_W; ph = TEMPLATE_H;
+        prepareSampleStats();
     }
     /** User taught texture is acquired from the frozen game screen, not a moving scene. */
     public void learn(Bitmap bitmap, int cx, int cy, File file) throws IOException {
@@ -65,6 +78,7 @@ public final class VisualMatcher {
             out.writeInt(TEMPLATE_W);out.writeInt(TEMPLATE_H);out.write(values);
         }
         pattern=values;pw=TEMPLATE_W;ph=TEMPLATE_H;
+        prepareSampleStats();
     }
     public boolean load(File file) {
         try (DataInputStream in = new DataInputStream(new FileInputStream(file))) {
@@ -73,6 +87,7 @@ public final class VisualMatcher {
             byte[] bytes = new byte[w * h];
             in.readFully(bytes);
             pattern = bytes; pw = w; ph = h;
+            prepareSampleStats();
             return true;
         } catch (IOException e) { return false; }
     }
@@ -83,28 +98,33 @@ public final class VisualMatcher {
         int bottom = Math.min(image.getHeight(), cy+rh/2);
         if (right-left < pw || bottom-top < ph) return 0f;
         Image.Plane plane = image.getPlanes()[0];
-        // Patch 1: subsampled zero-mean normalized correlation handles moderate lighting changes.
-        // Patch 2: small search area, shifted by two pixels, avoids heavy full-frame processing.
+        // Keep one native ByteBuffer view per search rather than per pixel.
+        ByteBuffer data = plane.getBuffer();
+        int rowStride = plane.getRowStride(), pixelStride = plane.getPixelStride();
+        final double ta = sampledSum, ta2 = sampledSquares;
+        final int n = sampledCount;
+        final double varT = ta2 - ta * ta / n;
         float best = 0f;
         for (int y = top; y <= bottom-ph; y += 2) {
             for (int x = left; x <= right-pw; x += 2) {
-                double ta=0, ia=0, ta2=0, ia2=0, cross=0;
-                int n=0, absDiff=0;
+                double ia=0, ia2=0, cross=0;
+                int absDiff=0;
                 for (int j=0; j<ph; j+=2) {
                     for (int i=0; i<pw; i+=2) {
                         int t = pattern[j*pw+i] & 255;
-                        int v = gray(plane, x+i, y+j);
-                        ta+=t; ia+=v; ta2+=t*t; ia2+=v*v; cross+=t*v;
-                        absDiff += Math.abs(t-v); n++;
+                        int v = gray(data,rowStride,pixelStride,x+i,y+j);
+                        ia+=v; ia2+=v*v; cross+=t*v;
+                        absDiff += Math.abs(t-v);
                     }
                 }
-                double varT = ta2 - ta*ta/n;
                 double varI = ia2 - ia*ia/n;
-                // A nearly uniform pixel patch cannot give meaningful NCC; use absolute difference.
                 double s = varT < 70 || varI < 70
                         ? Math.max(0d, 1d - (double)absDiff/n/64d)
                         : (cross - ta*ia/n) / Math.sqrt(varT*varI);
-                if (s > best) best = (float) s;
+                if (s > best) {
+                    best = (float) s;
+                    if(best > .978f) return best;
+                }
             }
         }
         return best;

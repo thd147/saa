@@ -22,6 +22,12 @@ public final class DecisionEngine {
      * Lookahead only resolves ambiguity; never blindly dispatch a 3-click burst.
      */
     public Action observe(float[] left, float[] right, float threshold) {
+        return observe(left, right, threshold, false);
+    }
+
+    /** Fast confirmation is allowed only for one unambiguous, very strong first tile.
+     * Any ambiguous or weaker image retains the regular two-frame rule. */
+    public Action observe(float[] left, float[] right, float threshold, boolean fastConfirmation) {
         if (left == null || right == null || left.length < 3 || right.length < 3) {
             throw new IllegalArgumentException("Three scores on each side are required");
         }
@@ -54,6 +60,14 @@ public final class DecisionEngine {
             return missing >= 14 ? Action.STOP : Action.NONE;
         }
         missing = 0;
+        boolean exclusiveStrong = fastConfirmation &&
+                ((l1 && !r1 && left[0] >= threshold + .12f && right[0] <= threshold - .12f)
+                || (r1 && !l1 && right[0] >= threshold + .12f && left[0] <= threshold - .12f));
+        if (exclusiveStrong) {
+            candidate = desired;
+            consecutive = 1;
+            return desired;
+        }
         if (desired != candidate) {
             candidate = desired;
             consecutive = 1;

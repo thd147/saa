@@ -34,6 +34,14 @@ public class DecisionEngineTest {
         e = new DecisionEngine(true);
         for(int i=0;i<13;i++) eq(NONE,e.observe(no,no,.77f));
         eq(STOP,e.observe(no,no,.77f));
+        // New turbo mode: only a decisive, isolated high score gets one-frame response.
+        e = new DecisionEngine(true);
+        eq(UP,e.observe(vals(.98f,.1f,.1f),no,.77f,true));
+        e.committed(UP);
+        eq(NONE,e.observe(vals(.80f,.1f,.1f),no,.77f,true));
+        eq(UP,e.observe(vals(.80f,.1f,.1f),no,.77f,true));
+        e.committed(UP);
+        eq(NONE,e.observe(yes,yes,.77f,true));
         System.out.println("PASS: basic control, 2-frame smoothing, 3-step lookahead, ambiguity, no-evidence stop");
     }
 }

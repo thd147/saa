@@ -7,8 +7,33 @@ import android.content.SharedPreferences;
 public final class Prefs {
     private final SharedPreferences p;
     public Prefs(Context context) { p = context.getSharedPreferences("stairpilot", Context.MODE_PRIVATE); }
-    public int delayMs() { return Math.max(90, Math.min(790, p.getInt("delay", 160))); }
-    public void setDelay(int ms) { p.edit().putInt("delay", Math.max(90, Math.min(790, ms))).apply(); }
+    public ModeProfile mode() {
+        try { return ModeProfile.valueOf(p.getString("mode_v13", "NORMAL")); }
+        catch (IllegalArgumentException e) { return ModeProfile.NORMAL; }
+    }
+    public void setMode(ModeProfile m) { p.edit().putString("mode_v13", m.name()).apply(); }
+    /** Delay is applied after gesture acknowledgement; OS rendering time is additional. */
+    public int delayMs() { return Math.max(45, Math.min(350,
+            p.getInt("delay13_" + mode().name(), mode().defaultDelayMs))); }
+    public void setDelay(int ms) { p.edit().putInt("delay13_" + mode().name(),
+            Math.max(45, Math.min(350, ms))).apply(); }
+    public int tapDurationMs() { return mode().tapMs; }
+    public boolean eventAutoContinue() { return p.getBoolean("event_auto_continue13", false); }
+    public void setEventAutoContinue(boolean enabled) { p.edit().putBoolean("event_auto_continue13", enabled).apply(); }
+    public boolean eventPromptCalibrated() { return p.getBoolean("event_prompt13", false); }
+    public void markEventPromptCalibrated(boolean v) { p.edit().putBoolean("event_prompt13", v).apply(); }
+    public void saveEventPoint(float x, float y, int w, int h) {
+        if(w < 1 || h < 1) throw new IllegalArgumentException();
+        p.edit().putFloat("event_px13", Math.max(0f, Math.min(1f, x / w)))
+                .putFloat("event_py13", Math.max(0f, Math.min(1f, y / h)))
+                .putInt("event_w13", w).putInt("event_h13", h).apply();
+    }
+    public int eventX(int w) { return Math.round(p.getFloat("event_px13", .5f)*w); }
+    public int eventY(int h) { return Math.round(p.getFloat("event_py13", .5f)*h); }
+    public boolean sameEventResolution(int w, int h) {
+        return Math.abs(w-p.getInt("event_w13", -1)) <= 2 &&
+                Math.abs(h-p.getInt("event_h13", -1)) <= 2;
+    }
     public float threshold() { return Math.max(.50f, Math.min(.95f, p.getFloat("threshold", .78f))); }
     public void setThreshold(float f) { p.edit().putFloat("threshold", Math.max(.50f, Math.min(.95f, f))).apply(); }
     public boolean initialLeft() { return p.getBoolean("initialLeft", true); }
