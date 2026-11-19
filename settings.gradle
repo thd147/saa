@@ -6,4 +6,4 @@ dependencyResolutionManagement {
     repositories { google(); mavenCentral() }
 }
 rootProject.name = 'StairPilotMobile'
-include ':app'
+include ':app', ':preview'

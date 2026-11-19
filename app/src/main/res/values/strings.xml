@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="accessibility_description">사용자가 직접 시작한 계단 게임 자동 조작을 위해 지정한 화면 위치를 터치합니다. 언제든 중지할 수 있습니다.</string>
+    <string name="app_name">무계매크로</string>
+    <string name="accessibility_description">무계매크로는 사용자가 시작할 때에만 화면에서 보정한 게임 버튼에 터치 제스처를 보냅니다. 화면 이미지와 제스처 데이터는 외부로 전송하지 않습니다. 설정에서 서비스를 꺼 언제든 중지할 수 있습니다.</string>
 </resources>

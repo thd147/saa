@@ -112,7 +112,7 @@ public final class StairAccessibilityService extends AccessibilityService {
             if (p != null) p.pause("사용자 중지");
             say("중지됨");
         });
-        makeButton("숨김", bar, v -> hideToolbar());
+        makeButton("메뉴 숨기기", bar, v -> hideToolbar());
         TextView liveStatus=new TextView(this);
         liveStatus.setTextSize(10); liveStatus.setTextColor(Color.WHITE);
         liveStatus.setPadding(dp(3),dp(3),dp(3),dp(3));

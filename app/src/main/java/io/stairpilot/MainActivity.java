@@ -26,10 +26,16 @@ import android.widget.Toast;
 public final class MainActivity extends Activity {
     private static final int REQUEST_CAPTURE = 501;
     private final Handler ui = new Handler();
-    private TextView status, delayLabel, thresholdLabel, orientationLabel, modeLabel;
+    private TextView status, permissionStatus, delayLabel, thresholdLabel, orientationLabel, modeLabel;
     private Prefs prefs;
     private final Runnable refresh = new Runnable() {
         @Override public void run() {
+            if (permissionStatus != null) {
+                permissionStatus.setText("접근성 터치: " + (StairAccessibilityService.get()!=null ? "연결됨 ✓" : "미연결")
+                    + "   |   화면 캡처: " + (ProjectionService.get()!=null ? "서비스 실행 중 ✓" : "미실행")
+                    + "\n계단 보정: " + (prefs.calibrated() ? "기록 있음 ✓" : "필요")
+                    + "   |   게이지 보정: " + (prefs.gaugeCalibrated() ? "기록 있음 ✓" : "선택 사항"));
+            }
             if (status != null) {
                 status.setText(ProjectionService.status + "\n성공 입력: " + ProjectionService.successfulSteps
                         + "회 · 최근 약 " + String.format(java.util.Locale.US, "%.1f", ProjectionService.recentStepsPerSecond)
@@ -49,18 +55,22 @@ public final class MainActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(19), dp(24), dp(19), dp(30));
-        root.setBackgroundColor(0xfff5f7fa);
+        root.setBackgroundColor(0xfff3f6fc);
         outer.addView(root);
         setContentView(outer);
-        TextView heading = text("StairPilot · 무한의 계단", 23, true, root);
-        heading.setTextColor(0xff17233b);
-        text("v1.4.0 · 장시간 보호 · 속도 적응 · 진단 · 새 계단 아이콘", 14, false, root);
-        text("권한 안내: 이 앱은 게임 화면을 읽고 접근성 제스처를 보냅니다. 화면 픽셀은 기기에서만 분석하고 네트워크로 보내지 않습니다. 보안 경고를 무시하거나 우회하지 마세요.", 13, false, root);
+        TextView heading = text("무계매크로", 26, true, root);
+        heading.setTextColor(0xff142842);
+        text("v1.5.0  |  무한의 계단 화면 인식 보조 도구", 14, false, root);
+        text("시작 전 권한과 보정 상태를 확인하세요. 자동 플레이는 게임 정책에 영향을 줄 수 있으며, 계단 기록이나 승률을 보장하지 않습니다.", 13, false, root);
+        text("1단계  ·  권한과 준비 상태", 18, true, root).setPadding(0, dp(24), 0, dp(8));
+        permissionStatus = text("권한 상태 확인 중…", 15, true, root);
+        permissionStatus.setTextColor(0xff185d87);
+        button(root,"설치 차단·권한 안내", v -> showInstallHelp());
         status = text("준비 중", 16, true, root);
         status.setTextColor(0xff12656b);
         status.setPadding(0, dp(16), 0, dp(18));
-        button(root, "① 접근성 서비스 켜기", v -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
-        button(root, "② 화면 공유 시작 (전체 화면 선택)", v -> requestCapture());
+        button(root, "① 접근성 제스처 권한 설명·설정", v -> showPermissionNotice(true));
+        button(root, "② 화면 공유 권한 설명·시작", v -> showPermissionNotice(false));
         button(root, "③ 무한의 계단 열기", v -> openGame());
         button(root, "④ 플로팅 메뉴 표시", v -> {
             StairAccessibilityService s = StairAccessibilityService.get();
@@ -72,9 +82,9 @@ public final class MainActivity extends Activity {
             startService(i);
             ProjectionService.status = "중지 명령 전송됨";
         });
-        text("보정 방법", 18, true, root).setPadding(0, dp(22), 0, dp(5));
+        text("2단계  ·  계단 위치 보정", 18, true, root).setPadding(0, dp(22), 0, dp(5));
         text("게임 화면이 보이는 상태에서 오른쪽 위 '보정'을 누르세요. 올라가기·회전 버튼을 먼저 지정하고, 왼쪽 1~3칸과 오른쪽 1~3칸의 계단 중심을 차례로 터치합니다. 마지막으로 현재 보이는 계단 블록 안의 테두리/무늬가 들어간 곳을 학습시킵니다. 총 9번 터치입니다.", 14, false, root);
-        text("모드 선택 · 실행 중 변경하면 안전 정지됩니다", 18, true, root).setPadding(0, dp(22), 0, dp(5));
+        text("3단계  ·  자동 플레이 설정", 18, true, root).setPadding(0, dp(22), 0, dp(5));
         modeLabel = text("현재: " + prefs.mode().korean, 15, true, root);
         text("PVP는 강한 단일 계단 신호에서만 1프레임 확정. 이벤트 특수 규칙과 협동전 몬스터는 별도 인식하지 못합니다.", 13, false, root);
         delayLabel = text("입력 대기", 15, false, root);
@@ -126,9 +136,9 @@ public final class MainActivity extends Activity {
                         longMode.setText("장시간 모드: 켜짐 (수동 시작 필요)");
                     }).show();
         });
-        button(root,"진단 기록 복사 (화면 이미지 비포함)",v -> {
+        button(root,"기술 진단 기록 복사 (화면 이미지 없음)",v -> {
             ClipboardManager clip=getSystemService(ClipboardManager.class);
-            if(clip != null) clip.setPrimaryClip(ClipData.newPlainText("StairPilot diagnostic",Diagnostics.snapshot()));
+            if(clip != null) clip.setPrimaryClip(ClipData.newPlainText("무계매크로 기술 진단",Diagnostics.snapshot()));
             toast("진단 기록을 복사했습니다. 필요할 때만 공유하세요.");
         });
         text("이벤트 버튼 자동화: 게임 이벤트 화면에 보이는 안전한 '계속/다시하기' 버튼을 플로팅 메뉴에서 직접 학습해야 합니다. 이벤트 참가, 구매, 광고, 보상 선택은 자동으로 실행하지 않습니다.", 13, false, root);
@@ -176,6 +186,9 @@ public final class MainActivity extends Activity {
     }
     private void button(LinearLayout parent,String name, View.OnClickListener onClick) {
         Button b = new Button(this); b.setText(name); b.setAllCaps(false);
+        b.setTextColor(0xff142842);
+        b.setTextSize(15);
+        b.setContentDescription(name);
         b.setOnClickListener(onClick);
         LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, dp(51));
         p.topMargin = dp(5); parent.addView(b,p);
@@ -190,6 +203,25 @@ public final class MainActivity extends Activity {
     }
     private void updateFacingLabel() { orientationLabel.setText("시작 시 캐릭터 방향: " + (prefs.initialLeft()?"왼쪽":"오른쪽")); }
     private void toast(String value) { Toast.makeText(this,value,Toast.LENGTH_LONG).show(); }
+    private void showPermissionNotice(boolean accessibility) {
+        String title = accessibility ? "접근성 제스처 권한 사용" : "게임 화면 공유 권한 사용";
+        String description = accessibility
+                ? "무계매크로는 사용자가 지정한 게임 위치를 자동으로 터치하기 위해 접근성 제스처 권한을 사용합니다. 다른 앱의 화면과 입력에 영향을 줄 수 있는 민감한 권한입니다.\n\n설정에서 직접 켜고 끌 수 있으며, 자동 조작은 사용자가 '시작'을 누른 경우에만 실행됩니다. 동의하지 않으면 취소하세요."
+                : "무계매크로는 게임 계단과 빨간 시간 게이지를 판단하기 위해 화면 공유를 요청합니다. 프레임은 휴대폰에서 분석하며 외부로 업로드하지 않습니다.\n\n화면 공유는 시스템 대화상자에서 직접 허용하며, 언제든 알림의 종료 버튼으로 중지할 수 있습니다.";
+        new AlertDialog.Builder(this)
+                .setTitle(title).setMessage(description)
+                .setNegativeButton("취소", (dialog, which) -> { })
+                .setPositiveButton(accessibility ? "설정으로 이동" : "화면 공유 요청", (dialog, which) -> {
+                    if (accessibility) startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                    else requestCapture();
+                }).show();
+    }
+    private void showInstallHelp() {
+        new AlertDialog.Builder(this)
+                .setTitle("설치·권한 점검")
+                .setMessage("① Google Play 프로텍트가 설치 자체를 차단했다면 앱에서 해제할 수 없습니다. 경고의 정확한 문구를 확인하고 출처·권한·서명을 점검하세요.\n\n② 진단용 '무계매크로 미리보기' APK는 민감한 권한이 없습니다. 미리보기 앱만 설치된다면 실제 매크로의 접근성 선언 또는 배포 경로가 원인일 가능성이 있습니다.\n\n③ 기존 APK와 새 APK의 서명이 다르면 업데이트가 실패할 수 있습니다. 앱 데이터를 백업한 뒤 서명 관리 방식을 확인하세요.\n\n④ Play 프로텍트를 끄거나 접근성 제한을 우회하지 마세요. 앱 아이콘과 이름 변경만으로 차단을 해결할 수 없습니다.")
+                .setPositiveButton("확인", (dialog, which) -> { }).show();
+    }
     private void requestCapture() {
         MediaProjectionManager m = getSystemService(MediaProjectionManager.class);
         startActivityForResult(m.createScreenCaptureIntent(), REQUEST_CAPTURE);

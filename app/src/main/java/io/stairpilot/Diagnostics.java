@@ -15,7 +15,7 @@ public final class Diagnostics {
         entries.addLast(String.format(Locale.ROOT, "%ds: %s", timeMs / 1000, safe));
     }
     public static synchronized String snapshot() {
-        StringBuilder b = new StringBuilder("StairPilot Mobile v1.4.0 · 화면/개인정보 비포함\n");
+        StringBuilder b = new StringBuilder("무계매크로 v1.5.0 · 화면/개인정보 비포함\n");
         for (String line : entries) b.append(line).append('\n');
         return b.toString();
     }

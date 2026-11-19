@@ -108,7 +108,7 @@ public final class ProjectionService extends Service {
         PendingIntent pi = PendingIntent.getService(this, 41, stop,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         return new Notification.Builder(this, "capture")
-                .setContentTitle("StairPilot · 모바일 계단 인식")
+                .setContentTitle("무계매크로 · 화면 분석 중")
                 .setContentText("게임 화면 분석 중 · 중지하려면 누르세요")
                 .setSmallIcon(android.R.drawable.ic_media_play)
                 .setOngoing(true)
@@ -144,7 +144,7 @@ public final class ProjectionService extends Service {
             captureW = dimensions.x; captureH = dimensions.y;
             reader = ImageReader.newInstance(captureW, captureH, PixelFormat.RGBA_8888, 2);
             reader.setOnImageAvailableListener(this::onFrame, work);
-            display = projection.createVirtualDisplay("StairPilot", captureW, captureH,
+            display = projection.createVirtualDisplay("무계매크로", captureW, captureH,
                     getResources().getDisplayMetrics().densityDpi,
                     DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader.getSurface(), null, work);
             matcher.load(templateFile());

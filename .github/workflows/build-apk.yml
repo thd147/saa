@@ -19,21 +19,37 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Test logic (no Android SDK required)
+      - name: Check source structure and permissions
+        run: python3 scripts/check_project.py
+      - name: Run Java logic and installation guide tests
         run: |
           mkdir -p tests/build
-          javac -d tests/build app/src/main/java/io/stairpilot/DecisionEngine.java app/src/main/java/io/stairpilot/PromptGate.java app/src/main/java/io/stairpilot/ModeProfile.java app/src/main/java/io/stairpilot/AdaptivePacer.java app/src/main/java/io/stairpilot/RunGuard.java app/src/main/java/io/stairpilot/GaugeDetector.java app/src/main/java/io/stairpilot/GaugePacer.java tests/DecisionEngineTest.java tests/PromptGateTest.java tests/AdaptivePacerTest.java tests/RunGuardTest.java tests/GaugeDetectorTest.java tests/GaugePacerTest.java tests/LongClimbSimulationTest.java
-          java -cp tests/build DecisionEngineTest
-          java -cp tests/build PromptGateTest
-          java -cp tests/build AdaptivePacerTest
-          java -cp tests/build RunGuardTest
-          java -cp tests/build GaugeDetectorTest
-          java -cp tests/build GaugePacerTest
-          java -cp tests/build LongClimbSimulationTest
-      - name: Build
-        run: gradle --no-daemon assembleDebug
+          javac -encoding UTF-8 -d tests/build \
+            app/src/main/java/io/stairpilot/{DecisionEngine,PromptGate,ModeProfile,AdaptivePacer,RunGuard,GaugeDetector,GaugePacer}.java \
+            preview/src/main/java/io/mugye/preview/InstallGuide.java tests/*.java
+          for test in DecisionEngineTest PromptGateTest AdaptivePacerTest RunGuardTest GaugeDetectorTest GaugePacerTest LongClimbSimulationTest InstallGuideTest; do
+            java -cp tests/build "$test"
+          done
+      - name: Build macro and permission-free preview
+        run: gradle --no-daemon :app:assembleDebug :preview:assembleDebug
+      - name: Verify build outputs
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s preview/build/outputs/apk/debug/preview-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify preview/build/outputs/apk/debug/preview-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep "versionName='1.5.0'"
+          if "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions preview/build/outputs/apk/debug/preview-debug.apk | grep -E 'uses-permission|BIND_ACCESSIBILITY_SERVICE'; then
+            echo 'Preview APK unexpectedly declares sensitive permissions' >&2
+            exit 1
+          fi
       - uses: actions/upload-artifact@v4
         with:
-          name: StairPilot-debug-apk
+          name: MugyeMacro-v1.5-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MugyePreview-v1.5-safe-apk
+          path: preview/build/outputs/apk/debug/preview-debug.apk
           if-no-files-found: error
