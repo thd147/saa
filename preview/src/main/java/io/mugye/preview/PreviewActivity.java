@@ -37,12 +37,17 @@ public final class PreviewActivity extends Activity {
         outer.addView(root);
         setContentView(outer);
         line(root, "무계매크로", 29, true);
-        line(root, "v1.5 · 설치 진단 전용 미리보기", 16, true);
+        line(root, "v1.6 · 설치 진단 전용 미리보기", 16, true);
         line(root, "이 APK에는 게임 자동 터치, 접근성 서비스, 화면 캡처 기능이 없습니다. 실제 매크로 APK와 다른 앱으로 설치됩니다.", 15, false);
+        line(root, "현재 휴대폰", 21, true);
+        line(root, "Android API " + android.os.Build.VERSION.SDK_INT
+            + " · CPU: " + android.text.TextUtils.join(", ", android.os.Build.SUPPORTED_ABIS), 14, false);
         line(root, "어떤 문제가 발생했나요?", 21, true);
         choose(root, "Play 프로텍트가 설치를 차단함", InstallGuide.PLAY_PROTECT);
         choose(root, "기존 앱과 업데이트 충돌", InstallGuide.SIGNATURE);
         choose(root, "ZIP은 받았지만 APK가 없음", InstallGuide.APK_FILE);
+        choose(root, "일반 APK와 분할 APK 차이", InstallGuide.APK_FORMAT);
+        choose(root, "64비트·CPU 호환성 문제", InstallGuide.ARCHITECTURE);
         choose(root, "다른 설치 오류", InstallGuide.OTHER);
         advice = new TextView(this);
         advice.setTextColor(0xff145d76);

@@ -19,37 +19,42 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Check source structure and permissions
-        run: python3 scripts/check_project.py
-      - name: Run Java logic and installation guide tests
+      - name: Three independent test cycles (static + Java + synthetic archives)
         run: |
-          mkdir -p tests/build
-          javac -encoding UTF-8 -d tests/build \
-            app/src/main/java/io/stairpilot/{DecisionEngine,PromptGate,ModeProfile,AdaptivePacer,RunGuard,GaugeDetector,GaugePacer}.java \
-            preview/src/main/java/io/mugye/preview/InstallGuide.java tests/*.java
-          for test in DecisionEngineTest PromptGateTest AdaptivePacerTest RunGuardTest GaugeDetectorTest GaugePacerTest LongClimbSimulationTest InstallGuideTest; do
-            java -cp tests/build "$test"
+          for cycle in 1 2 3; do
+            echo "=============== MUGYE v1.6 cycle $cycle / 3 ==============="
+            python3 scripts/check_project.py
+            python3 tests/test_apk_audit.py
+            mkdir -p tests/build
+            javac -encoding UTF-8 -d tests/build \
+              app/src/main/java/io/stairpilot/{DecisionEngine,PromptGate,ModeProfile,AdaptivePacer,RunGuard,GaugeDetector,GaugePacer}.java \
+              preview/src/main/java/io/mugye/preview/InstallGuide.java tests/*.java
+            for test in DecisionEngineTest PromptGateTest AdaptivePacerTest RunGuardTest GaugeDetectorTest GaugePacerTest LongClimbSimulationTest InstallGuideTest; do
+              java -cp tests/build "$test"
+            done
           done
-      - name: Build macro and permission-free preview
+      - name: Build both Android applications
         run: gradle --no-daemon :app:assembleDebug :preview:assembleDebug
-      - name: Verify build outputs
+      - name: Audit built APK archives, package IDs, permissions, certificates
         run: |
-          test -s app/build/outputs/apk/debug/app-debug.apk
-          test -s preview/build/outputs/apk/debug/preview-debug.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify app/build/outputs/apk/debug/app-debug.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify preview/build/outputs/apk/debug/preview-debug.apk
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep "versionName='1.5.0'"
-          if "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions preview/build/outputs/apk/debug/preview-debug.apk | grep -E 'uses-permission|BIND_ACCESSIBILITY_SERVICE'; then
-            echo 'Preview APK unexpectedly declares sensitive permissions' >&2
-            exit 1
-          fi
+          python3 scripts/audit_apk.py \
+            --macro app/build/outputs/apk/debug/app-debug.apk \
+            --preview preview/build/outputs/apk/debug/preview-debug.apk \
+            --aapt "$ANDROID_HOME/build-tools/35.0.0/aapt" \
+            --apksigner "$ANDROID_HOME/build-tools/35.0.0/apksigner" \
+            --output build/reports/MUGYE-v1.6-APK-AUDIT.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: MugyeMacro-v1.5-debug-apk
+          name: MugyeMacro-v1.6-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: MugyePreview-v1.5-safe-apk
+          name: MugyePreview-v1.6-safe-apk
           path: preview/build/outputs/apk/debug/preview-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mugye-v1.6-apk-audit-report
+          path: build/reports/MUGYE-v1.6-APK-AUDIT.txt
           if-no-files-found: error

@@ -1,252 +1,66 @@
-# 무계매크로 v1.5.0 — 한글 UI / 설치 진단 / 권한 고지
+# 무계매크로 v1.6.0 — 설치 호환성 및 APK 검증 패치
 
-> **주의:** 현재 제공물은 **안드로이드 소스 프로젝트**입니다. 이 파일만으로 APK 설치가 가능하지 않습니다. GitHub Actions가 빌드에 성공해야 APK를 받을 수 있습니다. 실제 휴대폰에서의 Play 프로텍트 결과는 미검증입니다.
+> **소스 프로젝트입니다.** GitHub Actions 빌드 후에만 APK가 생성됩니다. 이 패치는 **Google Play 프로텍트 우회 기능을 제공하지 않으며**, 차단된 앱을 설치할 수 있다고 주장하지 않습니다.
 
-## 이번 버전의 목표
+## anyapk 저장소 참고 결과
 
-1. 앱 런처·설명·알림·진단 파일의 사용자 노출 이름을 **무계매크로**로 일치시킴 (내부 Java 패키지명 및 기존 앱 ID는 업데이트 호환을 위해 유지).
-2. **전체 한국어 UI**: 권한 상태 한눈에 보기, 순서가 보이는 화면(권한 → 보정 → 실행), 민감한 권한을 요청하기 전에 상세 설명과 취소 선택 제공.
-3. **Play 프로텍트 차단 원인 분리:** 기존 매크로와 **독립된 진단용 미리보기 APK**를 빌드함. 이 APK는 게임 조작·화면 공유·접근성 서비스를 사용하지 않으며, **동일 APK의 차단을 피해 가기 위한 우회 버전이 아님**. 미리보기 설치 여부로 설치 경로 문제와 권한 요인의 범위를 좁히는 목적.
-4. 기존 v1.4 계단 그림 아이콘 및 게이지 가속·PVP/이벤트 프로필·강제 정지 안전장치를 유지.
-5. 설치 문제 안내/출력 검증 자동 테스트 및 매니페스트 보안 검사 추가.
+- 참고: https://github.com/sam1am/anyapk (Kotlin, 무선 ADB 기반 APK 설치기).
+- `anyapk`는 일반 `.apk` 및 `.apkm`/`.xapk` 등 분할 패키지를 처리하지만, **무계매크로는 단일 APK**입니다. APKMirror Installer나 SAI가 필요한 형식이 아닙니다.
+- 무계매크로는 네이티브 `.so` 파일이 없는 Java 앱으로, 32비트 전용 ABI 호환성 문제일 가능성이 낮습니다.
+- `anyapk`의 ADB 설치 우회 경로는 포함하지 않습니다. 민감한 접근성 서비스가 선언된 앱의 Play 프로텍트 경고는 별도로 해결해야 합니다.
 
-## 왜 Play 프로텍트가 차단하나요?
+## v1.6 변경 사항
 
-Google 공식 가이드는 **브라우저 등에서 설치한 APK가 접근성 서비스(ACCESSIBILITY) 권한과 같은 민감한 기능을 요청하면** 위험 앱으로 분류되어 설치를 차단할 수 있다고 설명합니다. 이것만으로 해당 앱이 악성이라고 단정할 수는 없지만, 보호 기능을 해제해야 한다는 의미도 아닙니다. 아이콘·앱 이름·대기 시간을 바꿔도 차단이 해결된다고 보장할 수 없습니다.
+1. **한글 앱 UI의 호환성·설치 진단**: 현재 기기 Android API/CPU ABI 정보 표시, 단일 APK와 분할 APK 차이 안내, Play 프로텍트 오류와 ABI/서명 오류 구분.
+2. **실제 매크로는 기존 접근성 서비스를 그대로 명시적으로 선언**하고 화면 공유 권한은 시스템에서 개별 승인받습니다. Play 프로텍트를 회피하려고 권한을 숨기지 않습니다.
+3. **빌드 후 APK 검사** `scripts/audit_apk.py`: APK 형식·ZIP 손상·DEX·Manifest·네이티브 ABI 확인, `aapt`로 앱 ID·버전·권한 검증, `apksigner`로 APK 서명과 인증서 SHA-256 표시.
+4. **권한 없는 미리보기 APK도 동시 생성**: 미리보기는 게임 조작 기능이 없고 설치 오류만 진단합니다.
+5. **정적·Java·합성 APK 검사 3회 반복**: 5만·10만·20만 가상 계단의 경로 판단이 매 회 검증됩니다. 실제 게임 등반과 Play 프로텍트 통과는 **테스트하지 않았습니다**.
+6. 기존 속도 가속/게이지 보정/안전 정지/계단 아이콘 유지. 실제 앱 패키지명 `io.stairpilot.mobile`을 유지하고 버전만 v1.6.0으로 갱신.
 
-- https://developers.google.com/android/play-protect/warning-dev-guidance
-- https://support.google.com/googleplay/android-developer/answer/10964491
-- https://developer.android.com/guide/topics/ui/accessibility/service
+## 설치 차단과 관련한 사실
 
-실제 매크로 APK(`app`)는 사용자가 허용하는 MediaProjection 및 접근성 제스처를 사용합니다. 화면 픽셀의 외부 전송 권한(INTERNET)은 선언하지 않습니다. 앱이 자율적으로 게임을 조작하므로 Google Play의 접근성 API 정책에 따라 스토어 배포 심사가 제한될 수 있습니다. 어떤 경우에도 Play 프로텍트 비활성화, 우회 설치, 시스템 접근성 제한 강제 해제 코드는 포함하지 않습니다.
+- 공식 안내: https://developers.google.com/android/play-protect/warning-dev-guidance?hl=ko
+- 공식 64비트: https://developer.android.com/google/play/requirements/64-bit?hl=ko
+- Google은 인터넷 출처 APK에 접근성 등 민감한 기능이 선언되면 설치를 자동 차단할 수 있습니다. **서명·형식 검사가 모두 통과해도** 이 조건은 바뀌지 않습니다.
+- Play 프로텍트가 차단하면 보호 기능을 끄지 말고, 원인 확인 및 필요 시 공식 오탐 신고·이의신청 절차를 이용하세요.
+- 기존 설치 앱과 APK 서명이 다르면 업데이트가 실패할 수 있습니다. 지속적인 업데이트에는 안전하게 관리되는 같은 서명 키가 필요합니다. GitHub Actions의 임시 디버그 키는 빌드마다 달라질 수 있습니다.
 
-## GitHub Actions에서 생성되는 두 파일
+## GitHub 업로드 (스마트폰 Codespaces)
 
-| 아티팩트 | APK 이름 | 기능 | 민감한 권한 |
-|---|---|---|---|
-| `MugyeMacro-v1.5-debug-apk` | `app-debug.apk` | 실제 계단 자동화 | 접근성 서비스·화면 캡처·포그라운드 서비스 |
-| `MugyePreview-v1.5-safe-apk` | `preview-debug.apk` | 설치 및 UI 진단만 | **없음** |
-
-**미리보기 APK는 매크로가 아닙니다.** 미리보기가 설치된다고 해서 실제 매크로 APK가 안전하거나 설치될 것이라고 확정할 수 없습니다.
-
-## 진단 순서 (권장)
-
-1. 원래의 Play 프로텍트 차단 화면에서 **정확한 경고 문구**를 확인합니다. 계속 차단된다면 다른 출처의 APK로 바꿔가며 우회 설치하지 않습니다.
-2. GitHub Actions에서 `MugyePreview-v1.5-safe-apk`를 받아 ZIP을 풀고 `preview-debug.apk`만 테스트합니다.
-3. 미리보기는 설치되지만 실제 매크로는 차단된다면, 접근성 서비스 선언과 배포 경로가 위험 판정에 관여했을 가능성이 있습니다. 공식 개발자 가이드에 따라 앱과 서명을 검토하세요.
-4. **'앱이 설치되지 않았습니다'**는 Play 프로텍트와 다른 오류일 수 있습니다. GitHub Actions는 실행마다 다른 임시 디버그 서명을 생성하므로 기존 APK와 **서명 불일치**가 생길 수 있습니다. 기존 앱 데이터가 필요하다면 먼저 백업하고, 배포할 때는 동일한 **비공개 릴리스 서명 키**를 안전하게 관리해야 합니다. 여기에는 릴리스 키나 비밀번호를 넣지 않았습니다.
-5. 실제 기기, 버전, 경고 원문을 확인하고 나서 다음 수정 여부를 결정합니다.
-
-## 설치 안내 및 첫 실행
-
-1. https://github.com/thd147/saa/actions 에서 최신 `Build Android debug APK`가 성공했는지 확인합니다.
-2. 해당 작업의 `Artifacts`에서 원하는 아티팩트를 누릅니다. ZIP을 풀어 APK를 꺼냅니다.
-3. 권한 없는 미리보기 앱을 먼저 실행해 한글 화면과 진단 안내가 작동하는지 확인합니다.
-4. 실제 매크로 APK는 Play 프로텍트의 차단이 없어야만 설치합니다. 설치 후 접근성 설정과 화면 공유는 앱에서 **사용자가 직접 승인**합니다.
-5. 처음에는 일반 모드로 보정과 이동 정확도를 확인한 뒤 대기 시간을 줄입니다.
-
-## 기존 thd147/saa 저장소에 반영하기 (휴대폰 Codespaces)
-
-1. `StairPilotMobile-v1.5.0-android-source.zip` 파일을 GitHub `thd147/saa` 저장소의 `main`에 추가하고 Commit합니다.
-2. Codespaces 터미널에서 다음을 실행합니다.
+1. `MugyeMacro-v1.6.0-android-source.zip`을 https://github.com/thd147/saa/upload/main 에 업로드하고 Commit changes.
+2. Codespaces `verbose pancake`에서 아래 명령어 실행:
 
 ```bash
 git pull --ff-only origin main
-unzip -oq StairPilotMobile-v1.5.0-android-source.zip
+unzip -oq MugyeMacro-v1.6.0-android-source.zip
 cp -a StairPilotMobile/. .
 rm -rf StairPilotMobile
 git add -A
-git commit -m "MugyeMacro v1.5 Korean UI and safe install diagnostics"
+git commit -m "MugyeMacro v1.6 APK diagnostics and compatibility"
 git push origin main
 ```
 
-3. GitHub Actions에서 **2개 APK**가 생성된 것을 확인합니다.
+3. https://github.com/thd147/saa/actions 에서 `Build Android debug APK` 상태를 확인하세요.
+4. 빌드 성공 시 **3개의 아티팩트**가 생성됩니다: `MugyeMacro-v1.6-debug-apk` (실제 매크로), `MugyePreview-v1.6-safe-apk` (권한 없는 미리보기), `Mugye-v1.6-apk-audit-report` (APK 서명/ABI/권한 보고서).
+5. 실제 매크로 설치가 Play 프로텍트에 차단된다면 **억지로 설치하지 마세요**. 보고서와 Google 개발자 문서로 원인을 검토하세요.
 
-> 이전 v1.4 ZIP과 기존 설정 파일은 별도로 삭제하지 않아도 됩니다. 코드 복사 명령은 이름이 겹치는 앱 소스를 v1.5로 덮어씁니다.
-
-## 테스트
-
-- `InstallGuideTest`: 4가지 설치 오류 안내 메시지 분기 및 우회 안내 금지 검증.
-- 기존 판단 엔진 7개 테스트 + 장거리 5만·10만·20만 **알고리즘 시뮬레이션**.
-- `scripts/check_project.py`: 양쪽 AndroidManifest 유효성, 미리보기에 민감한 서비스/권한 없음, 앱 표시명 한글 확인, 버전·소스 누락 검증.
-- 빌드 워크플로는 Android SDK/Gradle 컴파일 후 두 APK를 각각 별도 Artifacts로 업로드합니다. **실제 게임 플레이나 Play 프로텍트 통과 테스트는 수행하지 않습니다.**
-
-## 알려진 제한
-
-- Play 프로텍트 차단이 재현될 수 있음. 이는 경고 우회 대상으로 다루지 않습니다.
-- 인터넷 없이 화면 캡처와 터치를 기기에서 처리하지만, 안드로이드 제조사별 접근성/화면 공유 동작은 다를 수 있음.
-- 패키지명 `io.stairpilot.mobile`은 업데이트 호환 때문에 유지됨. 앱 화면에 보이는 이름만 `무계매크로`로 변경됨.
-- 계단 높이 5만·10만·20만은 실제 등반 성공 기록이 아닌 가상 경로 계산 테스트임.
-- 이벤트 모드의 보상·결제·광고 자동화, PVP 자동 매칭, 24시간 무중단 정상 동작은 제공/보증하지 않음.
-
----
-
-## 이전 v1.4 변경 내역 (기록)
-
-# StairPilot Mobile v1.4.0 — 빨간 시간 게이지 대응 고속·안전 패치
-
-> **중요:** Android APK 빌드는 아직 수행하지 못했습니다. Java SE 알고리즘 테스트만 통과했습니다. v1.3.0의 실기기 실행 가능성과 별개로 v1.4의 설치/동작은 검증이 필요합니다. **Google Play 프로텍트의 차단은 사용자 기기를 보호하기 위한 신호**이며 아이콘 변경이나 코드 패치만으로 해결되지 않습니다. 민감한 접근성 권한을 우회·강제 허용하지 마세요.
-
-## v1.4 핵심 변경
-
-- **상단 빨간 시간 게이지 인식(사용자 보정 필수)**: 게임 화면을 정지 캡처한 뒤 게이지 바의 **안쪽 왼쪽 끝→안쪽 오른쪽 끝** 두 번 터치해 범위 지정. 막대 내부의 붉은/주황색 픽셀을 세 줄로 검사하고, 띄엄띄엄한 색상이나 불확실한 결과는 버립니다. 게이지 인식에 실패하면 보조 고층 가속만 작동하며 읽지 못한 게이지를 0%라고 가정하지 않습니다.
-- **고층 가변 가속**: 성공 처리된 제스처 입력 횟수를 계단 높이의 *근사치*로 사용해 100·250·500·1,000·2,500회 이후 대기를 단계적으로 줄이고, 게이지가 75%/50%/30%/15% 미만이면 추가 단축. 사용자가 끌 수 있음. 이 횟수는 실제 계단 높이나 점수와 동일하지 않습니다.
-- **속도 프로필**: 일반 모드 기본 72ms, PVP 38ms, 이벤트 76ms, 협동전 110ms. 선택 가능한 입력 후 대기 범위 25~350ms이며 최종 하한은 24ms. **안드로이드의 터치 완료 콜백·게임 렌더링·화면 캡처·경로 분석 지연은 이 수치에 포함되지 않습니다.** 24ms마다 반드시 계단이 올라간다는 뜻이 아닙니다.
-- **안전한 고속 확정**: 좌우 패턴 차이가 뚜렷할 때만 1프레임 판단, 모호하면 2프레임 재확인. 인식이 흔들리거나 기기 열 상태가 높으면 지연을 추가합니다. 잘못된 연타를 무제한 발송하지 않습니다.
-- **장시간 보호**: 8초 프레임 중단, 제스처 2.5초 무응답, 화면 끔, 배터리 15% 미만, 열 상태 3 이상, 게임 밖 전환을 감지하면 중지. 30분마다 **안전 정지**하도록 변경하고 수동 확인 후 다시 시작해야 합니다. 24시간 무중단/발열 없음/계정 안전을 보증하지 않습니다.
-- **아이콘 통합**: 기존 StairPilot 계단 모양 아이콘을 Android mdpi~xxxhdpi, 적응형 아이콘용 리소스로 포함. `assets/`에 벡터 원본과 미리보기 포함. **기존 아이콘은 수작업 벡터 제작이며 AI 생성 이미지라고 주장하지 않습니다.**
-- **모드 정책**: PVP 계단 조작은 일반 계단 패턴에 한해 적용, 상대 분석·자동 매칭·승리 보장은 아님. 이벤트는 직접 학습시킨 '계속/다시하기' 버튼만 최대 3회 제한 자동 인식. 결제·광고·보상 선택은 자동화 안 함.
-
-## 권한 및 설치 안전
-
-앱은 기기 화면을 읽는 MediaProjection 및 다른 앱을 터치할 수 있는 접근성 서비스 권한을 요청합니다. 매우 민감한 기능이며 Play 프로텍트가 이를 차단할 수 있습니다. **차단 해제 절차나 보안 기능 우회보다, 코드를 검토하고 권한이 꼭 필요한지 확인하는 편이 안전합니다.** 네트워크 전송 권한이 없고 이미지 분석은 기기 안에서만 수행하도록 작성했지만, 코드를 신뢰하기 전에 직접 점검하세요.
-
-## 빨간 시간 게이지 보정 방법
-
-1. 스마트폰에서 기존 계단 9점 보정을 완료하고, 게임에 빨간 시간 게이지가 표시된 장면을 띄웁니다.
-2. 화면 공유를 시작한 상태에서 우측 플로팅 메뉴의 **빨간 게이지 보정**을 누릅니다.
-3. 고정된 화면에서 막대의 **색이 채워질 수 있는 영역의 맨 왼쪽 안쪽**과 **맨 오른쪽 안쪽**을 차례로 선택합니다. 수평 위치를 비슷하게 맞추고, 테두리·점수 숫자·일시정지 버튼은 피하세요.
-4. 제어판의 **가변 가속: 켜짐** 상태를 확인합니다. 게임을 다시 열어 보정된 방향에서 ▶ 시작합니다.
-5. 표시된 게이지가 이상하거나 방향이 틀리면 바로 ■ 정지하고 다시 보정합니다. 특정 모드에 시간 게이지가 없거나 디자인이 달라지면 가변 속도를 끄세요.
-
-## 장거리 검증 — 게임 플레이가 아닌 알고리즘 시뮬레이션
-
-명령어: `javac ... && java -cp tests/build LongClimbSimulationTest`
-
-| 테스트 | 가상 계단 패턴 | 예상/실제 분기 오류 | 결과 |
-|---|---:|---:|---|
-| 1차 | 50,000 | 0 | PASS |
-| 2차 | 100,000 | 0 | PASS |
-| 3차 | 200,000 | 0 | PASS |
-
-세 번의 테스트는 결정적 의사난수 패턴으로 `DecisionEngine`, 1프레임/2프레임 판정, `GaugePacer` 범위를 **총 350,000회** 호출하는 알고리즘 검증입니다. 실제 게임에서 5만·10만·20만 계단에 도달하거나 24시간 정상 플레이를 검증한 것이 **아닙니다**. 실제 속도와 연동되는 게이지 검출도 합성 픽셀 테스트만 수행했습니다.
-
-## GitHub `thd147/saa` 업데이트 (휴대폰 Codespaces)
-
-1. `StairPilotMobile-v1.4.0-android-source.zip`을 GitHub `saa` 저장소의 `main` 브랜치에 업로드하고 **Commit changes** 합니다. v1.2/v1.3 ZIP은 삭제하지 않습니다.
-2. Codespaces `verbose pancake`의 터미널에서:
+## 로컬 소스 테스트 (Android SDK 불필요)
 
 ```bash
-git pull --ff-only origin main
-unzip -oq StairPilotMobile-v1.4.0-android-source.zip
-cp -a StairPilotMobile/. .
-rm -rf StairPilotMobile
-git add -A
-git commit -m "StairPilot Mobile v1.4 gauge adaptive speed"
-git push origin main
-```
-
-3. GitHub Actions의 **Build Android debug APK** 작업에서 빌드 성공 여부를 확인합니다. 성공 시 `StairPilot-debug-apk` 아티팩트의 `app-debug.apk`를 받습니다. GitHub Actions 디버그 APK는 빌드 환경별 서명이 달라 설치 업데이트가 안 될 수 있으며, 새 설치 시 보정 정보가 사라질 수 있습니다.
-
-## 테스트 실행 (Android SDK 없이)
-
-```bash
-mkdir -p tests/build
-javac -encoding UTF-8 -d tests/build \
-  app/src/main/java/io/stairpilot/{DecisionEngine,PromptGate,ModeProfile,AdaptivePacer,RunGuard,GaugeDetector,GaugePacer}.java \
-  tests/*.java
-for test in DecisionEngineTest PromptGateTest AdaptivePacerTest RunGuardTest GaugeDetectorTest GaugePacerTest LongClimbSimulationTest; do
-  java -cp tests/build "$test"
+for cycle in 1 2 3; do
+  python3 scripts/check_project.py
+  python3 tests/test_apk_audit.py
+  mkdir -p tests/build
+  javac -encoding UTF-8 -d tests/build \
+    app/src/main/java/io/stairpilot/{DecisionEngine,PromptGate,ModeProfile,AdaptivePacer,RunGuard,GaugeDetector,GaugePacer}.java \
+    preview/src/main/java/io/mugye/preview/InstallGuide.java tests/*.java
+  for test in DecisionEngineTest PromptGateTest AdaptivePacerTest RunGuardTest GaugeDetectorTest GaugePacerTest LongClimbSimulationTest InstallGuideTest; do
+    java -cp tests/build "$test"
+  done
 done
 ```
 
-## 참고
+**검증의 범위:** 위 테스트는 Java 로직과 APK 분석 코드의 *시뮬레이션/정적 검사*입니다. Android SDK가 없어 실제 APK 빌드, 휴대폰 설치, Play 프로텍트 판정, 연속 24시간 게임 실행은 확인하지 않았습니다.
 
-- 원본 프로젝트: https://github.com/hykeegj/auto-play-game
-- 무한의 계단 게이지 공략: https://gamejay.net/667
-- 고득점 팁: https://www.inven.co.kr/board/mogong/4222/612?vtype=pc
-- Reddit 플레이 경험: https://www.reddit.com/r/AndroidGaming/comments/c37ub3
-- Android MediaProjection: https://developer.android.com/media/grow/media-projection
-- Android 접근성: https://developer.android.com/reference/android/accessibilityservice/AccessibilityService
-
----
-
-# StairPilot Mobile v1.3.1 (앱 아이콘 패치)
-
-> v1.3.1 변경: 기본 안드로이드 앱 아이콘을 계단 테마의 자체 제작 아이콘으로 교체했습니다. 런처용 mdpi~xxxhdpi 및 Android 8+ adaptive icon 포함. **AI 이미지 생성 도구 오류로 아이콘은 직접 제작한 벡터 디자인이며, AI 생성 결과가 아닙니다.** 이번 패치는 아이콘만 변경하며 기존 v1.3.0의 속도·PVP·이벤트 기능은 유지합니다. Google Play 프로텍트의 차단 경고는 아이콘을 바꿔도 해결되지 않습니다. 미심쩍은 권한이나 출처를 우회하지 말고 먼저 검증하세요.
-
-# StairPilot Mobile v1.3.0 — 무한의 계단 모바일 화면 매크로 (실험용)
-
-Android 10 이상 / Java + Android SDK / 루팅·PC 연결 없이 화면 공유(MediaProjection)와 접근성 서비스 제스처를 사용하는 오프라인 앱. **게임 화면에 대한 사용자별 보정과 실제 기기 테스트가 필요합니다.** 게임 프로그램 자체를 변경하지 않습니다. 게임 이용약관이나 대전 공정성을 확인하세요.
-
-## 변경 내용 — v1.3.0 (속도 + 모드 + 이벤트)
-
-| 개선 | 구현된 동작 | 제한 |
-|---|---|---|
-| 화면 탐색 비용 절감 | 먼저 좌/우 첫 계단만 비교; 모호한 패턴에서만 2·3번째 조사 | 일부 특수 계단에서 재보정 필요 |
-| 템플릿 매칭 최적화 | 샘플 템플릿 통계를 미리 계산; 프레임 ByteBuffer 재사용; 0.978 넘으면 조기 종료 | 입력 FPS는 기기·게임 렌더링에 따라 달라짐 |
-| 빠른 입력 | 모드별 터치 시간 19~31ms, 완료 후 지연 45~350ms 직접 조절 | 모든 기기에서 동일한 실제 입력속도를 보장하지 않음 |
-| PVP 빠름 | 자신이 선택한 경로가 다른 쪽과 명확히 구분될 때만 단일 프레임 판단; 애매하면 2프레임 | 상대 플레이어/대전 게이지·데스매치 전용 탐지 없음 |
-| 이벤트 안전 보조 | 사용자가 눈으로 확인한 **'다시하기/계속' 버튼** 하나를 학습시켜 이벤트 모드에서만 자동으로 한 번 누름 | 이벤트 입장/미션/결제/광고/보상 선택 자동화 없음 |
-| 버튼 안전장치 | 학습한 UI가 3프레임 연속 보일 때만 작동, 사라져야 재무장, 1.8초 재클릭 제한, 세션당 3번 제한 | 특수 스킨/이벤트 화면에 따라 인식 실패 가능 |
-| 추가 모드 | 일반 / PVP / 이벤트 / 4인 협동 속도 프로필 | 협동전 몬스터 전투, 특수 임무 미지원 |
-| 표시 | 성공적으로 접수된 터치 횟수와 최근 추정 입력/초 표시 | 실제 캐릭터가 올라간 칸 수는 별도 검증되지 않음 |
-| 보호 | 프레임 타임스탬프 중복 무시, 제스처 직렬화, 인식불능 자동 정지, 모드 전환 시 정지 | 터치가 게임에 실제 반영되었는지 보장하지 않음 |
-
-## 현재 게임 모드 조사와 적용 범위
-
-게임 개발자 공식 Google Play 소개에는 **PVP 1vs1·2vs2·1vs4**, **협동전(4P)** 및 **시즌별 테마/특수 규칙 이벤트**가 소개되어 있습니다. 커뮤니티 위키에서는 월드/친구 PVP, 1:1 데스매치에서 빠른 게이지, 협동전과 이벤트별 추가 규칙을 설명합니다. 이는 계단 두 버튼만 누르는 기본 알고리즘과 다를 수 있습니다.
-
-- **일반 모드**: 동일한 계단 이미지가 보이는 구간에서 기본 이동 자동화. 대기 기본값 105ms.
-- **PVP**: 사용자가 게임 안에서 직접 매칭하고 게임이 시작된 뒤 활성화합니다. 첫 계단 신뢰도가 기준보다 0.12 이상 높고 반대쪽이 0.12 이상 낮을 때에만 즉시 반응. 기본값 55ms. 계단 위치/크기가 일반 모드와 다르면 다시 보정해야 합니다. 상대 정보 분석, 데스매치 게이지 탐지 및 자동 매칭 없음.
-- **이벤트**: 기본 계단 인식 + 보조 버튼 자동 탭(사전 학습 시). 기본값 105ms. 이벤트 전용 장애물·수집·다른 조작 규칙은 지원하지 않으며, 게임 화면에 계단이 3.5초간 인식되지 않으면 자동 정지합니다.
-- **협동전**: 빠른 실수보다 계단 터치의 안정성을 우선한 135ms 프로필. 몬스터 전투나 팀원 행동에 반응하지 않습니다.
-
-## 설치 및 설정
-
-1. Android Studio에서 이 프로젝트 폴더를 열어 디버그 APK를 빌드하거나, GitHub Actions `Build Android debug APK` 워크플로를 실행하세요.
-2. APK를 설치한 후 **접근성 서비스 켜기**, **화면 공유 시작**을 순서대로 허용합니다. Android 14 이상에서는 가능하면 **전체 화면** 공유를 선택하세요.
-3. 게임을 열고 화면 우측 플로팅 메뉴 **계단 보정**: 올라가기 버튼, 방향 전환 버튼, 왼쪽 1~3계단, 오른쪽 1~3계단, 이미지 학습 지점을 순서대로 터치(9회). UI 스킨/테마 변경이나 화면 회전 후 다시 보정합니다.
-4. 시작 방향(왼쪽/오른쪽)을 맞추고 모드 선택 후 **▶ 시작**. 탭이 너무 빠르거나 틀리면 **■ 정지** 후 대기시간을 높이고 재보정하세요.
-5. 이벤트 버튼 자동화가 필요하면 **이벤트 종료/다시하기 화면을 직접 띄운 후** 플로팅 메뉴 **이벤트 버튼 학습**을 눌러 캡처한 고정 화면에서 글자/무늬가 있는 안전한 '다시하기' 또는 '계속' 버튼 하나의 중심을 선택하세요. 앱의 `이벤트 버튼 자동 누르기: 켜짐`으로 변경하고 `이벤트` 모드에서만 실행합니다. 오인식 위험이 있으므로 결제, 광고, 스킵 등은 절대 학습하지 마세요.
-6. 앱이 갑자기 멈추면 `StairPilot` 화면의 상태 메시지와 플로팅 메뉴의 L/R 신뢰도 값을 확인하세요. `Threshold`를 무작정 낮추기보다 먼저 위치와 이미지 패턴을 다시 보정하세요.
-
-## GitHub Codespaces를 이용한 기존 thd147/saa 저장소 업데이트
-
-**중요**: 이 ZIP에는 `StairPilotMobile/` 디렉터리로 소스가 들어 있습니다. 기존 v1.2 ZIP, GitHub 기록, 다른 파일은 강제로 지우지 않습니다.
-
-1. `StairPilotMobile-v1.3.0-android-source.zip`을 저장소의 `main` 브랜치에 업로드하고 `Commit changes`를 완료합니다. 별도 PR 생성 시 병합합니다.
-2. Codespaces 터미널에서:
-
-```bash
-unzip -oq StairPilotMobile-v1.3.0-android-source.zip
-cp -a StairPilotMobile/. .
-rm -rf StairPilotMobile
-git add -A
-git commit -m "StairPilot v1.3 speed + PVP/event profiles"
-git push origin main
-```
-
-3. `https://github.com/thd147/saa/actions`에서 새 `Build Android debug APK` 작업의 성공 여부를 확인하고, 성공 시 `Artifacts`의 `StairPilot-debug-apk`를 받아 ZIP 압축을 풀어 APK 설치.
-4. 기존 설치 앱은 같은 applicationId `io.stairpilot.mobile`로 유지하지만, 디버그 APK 서명 키가 이전 빌드와 다르면 업데이트 설치가 실패할 수 있습니다. 그 경우 기존 앱 설정/학습 정보가 지워질 수 있으니 미리 기록하고, 기존 앱을 제거한 뒤 새 APK를 설치해야 합니다.
-
-### 기본 권장 속도
-
-- 처음 실행 시 **일반 105ms** 또는 **협동 135ms**에서 정확도를 확인하세요.
-- 정확도가 충분하면 **PVP 55ms**로 낮출 수 있습니다. 고속 입력 한계는 화면 인식과 Android 제스처 완료시간에 제한됩니다. 55ms는 *제스처 완료 후 대기 설정*이지 한 계단에 55ms가 걸린다는 뜻이 아닙니다.
-- 잦은 오류: 대기 시간을 90~160ms로 늘리고 시작 방향/보정/임계값을 점검하세요.
-
-## 검증
-
-`javac` 및 Java SE 테스트:
-
-```bash
-mkdir -p tests/build
-javac -d tests/build app/src/main/java/io/stairpilot/DecisionEngine.java app/src/main/java/io/stairpilot/ModeProfile.java app/src/main/java/io/stairpilot/PromptGate.java tests/DecisionEngineTest.java tests/PromptGateTest.java
-java -cp tests/build DecisionEngineTest
-java -cp tests/build PromptGateTest
-```
-
-실제 Android APK **v1.3.0의 컴파일 및 휴대폰 실전 플레이는 아직 검증되지 않았습니다**. GitHub Actions 결과와 실제 게임 화면에 따라 추가 수정이 필요할 수 있습니다.
-
-## 참고 출처
-
-- 원본 매크로: https://github.com/hykeegj/auto-play-game (LDPlayer, OpenCV, 화면 좌표 기반)
-- 사용자가 제공한 영상 설명: https://www.youtube.com/watch?v=uNmjkLuwqag (1~3칸 경로 판단 아이디어)
-- 공식 Google Play 소개: https://play.google.com/store/apps/details?id=com.nflystudio.InfiniteStaircase
-- K리그 2026 이벤트: https://www.kleague.com/news_view.do?orderBy=seq&seq=94550&viewOption=album
-- Android 접근성 제스처 공식 문서: https://developer.android.com/reference/android/accessibilityservice/AccessibilityService
-- Android 매크로 구현 비교: https://github.com/justin-reid/screen-clicker 및 https://github.com/steve1316/android-cv-bot-template
-- 커뮤니티(공식 개발자 문서는 아님): https://d.namu.moe/w/%EB%AC%B4%ED%95%9C%EC%9D%98%20%EA%B3%84%EB%8B%A8/%EC%BD%98%ED%85%90%EC%B8%A0
-
-Reddit의 관련 일반 Android 자동화 논의를 살펴봤으나, **무한의 계단 최신 PVP/이벤트를 직접 검증할 만한 자료는 찾지 못했습니다**. 구체적인 모드 지원 범위를 Reddit 정보로 추측하지 않았습니다.
+이전 변경사항은 `docs/README-v1.5.md`를 참조하세요.

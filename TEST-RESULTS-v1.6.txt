@@ -1,0 +1,44 @@
+무계매크로 v1.6.0 · 로컬 코드 테스트 기록
+
+===== TEST CYCLE 1 / 3 =====
+check_project.py: PASS (v1.6, manifests, disclosure, native-free source, preview isolation, icon)
+test_apk_audit.py: PASS (Java-only, multi-ABI, 32-bit-only rejection, invalid APK, bundle confusion)
+PASS: basic control, 2-frame smoothing, 3-step lookahead, ambiguity, no-evidence stop
+PASS prompt gating rearm, debounce, cooldown, cap
+AdaptivePacerTest OK
+RunGuardTest OK
+GaugeDetectorTest OK: 5 synthetic fills + 3 rejection cases
+GaugePacerTest OK
+SIMULATED 50,000 steps: PASS; wrong=0, turns=7,522, extra-confirm=2,024, fast-confirm=47,976, low-gauge=7522, delay-range=24..107ms, compute=19ms
+SIMULATED 100,000 steps: PASS; wrong=0, turns=29,928, extra-confirm=3,986, fast-confirm=96,014, low-gauge=15044, delay-range=24..99ms, compute=12ms
+SIMULATED 200,000 steps: PASS; wrong=0, turns=90,089, extra-confirm=8,109, fast-confirm=191,891, low-gauge=30089, delay-range=24..107ms, compute=12ms
+InstallGuideTest: PASS (6 cases)
+===== TEST CYCLE 2 / 3 =====
+check_project.py: PASS (v1.6, manifests, disclosure, native-free source, preview isolation, icon)
+test_apk_audit.py: PASS (Java-only, multi-ABI, 32-bit-only rejection, invalid APK, bundle confusion)
+PASS: basic control, 2-frame smoothing, 3-step lookahead, ambiguity, no-evidence stop
+PASS prompt gating rearm, debounce, cooldown, cap
+AdaptivePacerTest OK
+RunGuardTest OK
+GaugeDetectorTest OK: 5 synthetic fills + 3 rejection cases
+GaugePacerTest OK
+SIMULATED 50,000 steps: PASS; wrong=0, turns=7,522, extra-confirm=2,024, fast-confirm=47,976, low-gauge=7522, delay-range=24..107ms, compute=24ms
+SIMULATED 100,000 steps: PASS; wrong=0, turns=29,928, extra-confirm=3,986, fast-confirm=96,014, low-gauge=15044, delay-range=24..99ms, compute=18ms
+SIMULATED 200,000 steps: PASS; wrong=0, turns=90,089, extra-confirm=8,109, fast-confirm=191,891, low-gauge=30089, delay-range=24..107ms, compute=19ms
+InstallGuideTest: PASS (6 cases)
+===== TEST CYCLE 3 / 3 =====
+check_project.py: PASS (v1.6, manifests, disclosure, native-free source, preview isolation, icon)
+test_apk_audit.py: PASS (Java-only, multi-ABI, 32-bit-only rejection, invalid APK, bundle confusion)
+PASS: basic control, 2-frame smoothing, 3-step lookahead, ambiguity, no-evidence stop
+PASS prompt gating rearm, debounce, cooldown, cap
+AdaptivePacerTest OK
+RunGuardTest OK
+GaugeDetectorTest OK: 5 synthetic fills + 3 rejection cases
+GaugePacerTest OK
+SIMULATED 50,000 steps: PASS; wrong=0, turns=7,522, extra-confirm=2,024, fast-confirm=47,976, low-gauge=7522, delay-range=24..107ms, compute=22ms
+SIMULATED 100,000 steps: PASS; wrong=0, turns=29,928, extra-confirm=3,986, fast-confirm=96,014, low-gauge=15044, delay-range=24..99ms, compute=15ms
+SIMULATED 200,000 steps: PASS; wrong=0, turns=90,089, extra-confirm=8,109, fast-confirm=191,891, low-gauge=30089, delay-range=24..107ms, compute=15ms
+InstallGuideTest: PASS (6 cases)
+
+범위: 정적 소스·합성 APK 형식 검사 및 Java 가상 계단 판단 (Android SDK 없음).
+실제 Android APK 빌드 및 Play 프로텍트/실기기 설치·게임 테스트 미실시.

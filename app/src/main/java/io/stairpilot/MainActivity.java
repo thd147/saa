@@ -60,12 +60,13 @@ public final class MainActivity extends Activity {
         setContentView(outer);
         TextView heading = text("무계매크로", 26, true, root);
         heading.setTextColor(0xff142842);
-        text("v1.5.0  |  무한의 계단 화면 인식 보조 도구", 14, false, root);
+        text("v1.6.0  |  무한의 계단 화면 인식 보조 도구", 14, false, root);
         text("시작 전 권한과 보정 상태를 확인하세요. 자동 플레이는 게임 정책에 영향을 줄 수 있으며, 계단 기록이나 승률을 보장하지 않습니다.", 13, false, root);
         text("1단계  ·  권한과 준비 상태", 18, true, root).setPadding(0, dp(24), 0, dp(8));
         permissionStatus = text("권한 상태 확인 중…", 15, true, root);
         permissionStatus.setTextColor(0xff185d87);
         button(root,"설치 차단·권한 안내", v -> showInstallHelp());
+        button(root,"APK 형식·64비트 호환성 안내", v -> showCompatibilityHelp());
         status = text("준비 중", 16, true, root);
         status.setTextColor(0xff12656b);
         status.setPadding(0, dp(16), 0, dp(18));
@@ -221,6 +222,17 @@ public final class MainActivity extends Activity {
                 .setTitle("설치·권한 점검")
                 .setMessage("① Google Play 프로텍트가 설치 자체를 차단했다면 앱에서 해제할 수 없습니다. 경고의 정확한 문구를 확인하고 출처·권한·서명을 점검하세요.\n\n② 진단용 '무계매크로 미리보기' APK는 민감한 권한이 없습니다. 미리보기 앱만 설치된다면 실제 매크로의 접근성 선언 또는 배포 경로가 원인일 가능성이 있습니다.\n\n③ 기존 APK와 새 APK의 서명이 다르면 업데이트가 실패할 수 있습니다. 앱 데이터를 백업한 뒤 서명 관리 방식을 확인하세요.\n\n④ Play 프로텍트를 끄거나 접근성 제한을 우회하지 마세요. 앱 아이콘과 이름 변경만으로 차단을 해결할 수 없습니다.")
                 .setPositiveButton("확인", (dialog, which) -> { }).show();
+    }
+    private void showCompatibilityHelp() {
+        String abi = android.text.TextUtils.join(", ", android.os.Build.SUPPORTED_ABIS);
+        new AlertDialog.Builder(this)
+            .setTitle("APK 호환성·설치 경고 구분")
+            .setMessage("기기 Android API: " + android.os.Build.VERSION.SDK_INT
+                + "\n지원 CPU ABI: " + abi
+                + "\n\n이 앱은 Java 기반의 단일 APK이며, 현재 프로젝트에는 네이티브 .so 라이브러리가 없습니다. arm64용 APK로 따로 변환하거나 .apkm/.xapk 설치기를 사용할 이유가 없습니다."
+                + "\n\nPlay 프로텍트의 '기기 보호를 위해 차단됨'은 APK 형식·CPU 불일치 오류와 다릅니다. 접근성 서비스 선언이 영향을 줄 수 있으며, 설치 우회 방법은 제공하지 않습니다."
+                + "\n\n서명과 ABI/권한 내용은 GitHub Actions의 'APK 진단 보고서'에서 확인하세요.")
+            .setPositiveButton("확인", (d, w) -> { }).show();
     }
     private void requestCapture() {
         MediaProjectionManager m = getSystemService(MediaProjectionManager.class);

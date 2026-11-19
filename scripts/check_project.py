@@ -24,8 +24,15 @@ assert 'FOREGROUND_SERVICE' not in preview_raw
 assert 'usesCleartextTraffic="false"' in preview_raw
 assert '<string name="app_name">무계매크로</string>' in (root/'app/src/main/res/values/strings.xml').read_text()
 assert '<string name="app_name">무계매크로 미리보기</string>' in (root/'preview/src/main/res/values/strings.xml').read_text()
-assert "versionName '1.5.0'" in (root/'app/build.gradle').read_text()
+assert "versionName '1.6.0'" in (root/'app/build.gradle').read_text()
 assert "include ':app', ':preview'" in (root/'settings.gradle').read_text()
 assert 'showPermissionNotice(true)' in (root/'app/src/main/java/io/stairpilot/MainActivity.java').read_text()
 assert (root/'assets/StairPilot-icon-preview.png').stat().st_size > 1000
-print('check_project.py: PASS (2 manifests, labels, disclosure, preview isolation, icon)')
+assert 'APK 형식·64비트 호환성 안내' in (root/'app/src/main/java/io/stairpilot/MainActivity.java').read_text()
+assert 'android.permission.REQUEST_INSTALL_PACKAGES' not in main_raw
+assert 'android.permission.REQUEST_INSTALL_PACKAGES' not in preview_raw
+assert (root/'scripts/audit_apk.py').is_file()
+assert (root/'tests/test_apk_audit.py').is_file()
+for source in root.glob('app/src/main/**/*.so'):
+    raise AssertionError(f'Unexpected bundled native library: {source}')
+print('check_project.py: PASS (v1.6, manifests, disclosure, native-free source, preview isolation, icon)')
