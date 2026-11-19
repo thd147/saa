@@ -22,9 +22,14 @@ jobs:
       - name: Test logic (no Android SDK required)
         run: |
           mkdir -p tests/build
-          javac -d tests/build app/src/main/java/io/stairpilot/DecisionEngine.java app/src/main/java/io/stairpilot/PromptGate.java app/src/main/java/io/stairpilot/ModeProfile.java tests/DecisionEngineTest.java tests/PromptGateTest.java
+          javac -d tests/build app/src/main/java/io/stairpilot/DecisionEngine.java app/src/main/java/io/stairpilot/PromptGate.java app/src/main/java/io/stairpilot/ModeProfile.java app/src/main/java/io/stairpilot/AdaptivePacer.java app/src/main/java/io/stairpilot/RunGuard.java app/src/main/java/io/stairpilot/GaugeDetector.java app/src/main/java/io/stairpilot/GaugePacer.java tests/DecisionEngineTest.java tests/PromptGateTest.java tests/AdaptivePacerTest.java tests/RunGuardTest.java tests/GaugeDetectorTest.java tests/GaugePacerTest.java tests/LongClimbSimulationTest.java
           java -cp tests/build DecisionEngineTest
           java -cp tests/build PromptGateTest
+          java -cp tests/build AdaptivePacerTest
+          java -cp tests/build RunGuardTest
+          java -cp tests/build GaugeDetectorTest
+          java -cp tests/build GaugePacerTest
+          java -cp tests/build LongClimbSimulationTest
       - name: Build
         run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4

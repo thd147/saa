@@ -2,10 +2,10 @@ package io.stairpilot;
 
 /** Only changes the pacing/confirmation policy. Never assumes special event rules. */
 public enum ModeProfile {
-    NORMAL("일반 · 균형", 105, 27, false),
-    PVP("PVP · 빠름", 55, 19, true),
-    EVENT("이벤트 · 안정", 105, 28, false),
-    COOP("협동 · 정밀", 135, 31, false);
+    NORMAL("일반 · 가속", 72, 22, true),
+    PVP("PVP · 빠름", 38, 17, true),
+    EVENT("이벤트 · 안정", 76, 25, false),
+    COOP("협동 · 정밀", 110, 30, false);
 
     public final String korean;
     public final int defaultDelayMs;

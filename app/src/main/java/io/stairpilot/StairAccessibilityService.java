@@ -34,6 +34,8 @@ public final class StairAccessibilityService extends AccessibilityService {
     private Bitmap frozenImage;
     private int step = 0;
     private boolean eventWizard = false;
+    private boolean gaugeWizard = false;
+    private int gaugeFirstX, gaugeFirstY;
     private Handler ui;
     private final String[] prompts = {
         "1/9: 올라가기 버튼의 중앙을 터치",
@@ -54,7 +56,20 @@ public final class StairAccessibilityService extends AccessibilityService {
         ui = new Handler(getMainLooper());
         showToolbar();
     }
-    @Override public void onAccessibilityEvent(AccessibilityEvent event) { }
+    private volatile String lastForeground = "";
+    public boolean isGameForeground() {
+        return lastForeground.isEmpty() || "com.nflystudio.InfiniteStaircase".equals(lastForeground);
+    }
+    @Override public void onAccessibilityEvent(AccessibilityEvent event) {
+        if (event == null || event.getPackageName() == null) return;
+        String pkg=event.getPackageName().toString();
+        // Own overlay transitions must not invalidate the current game window.
+        if (getPackageName().equals(pkg)) return;
+        lastForeground=pkg;
+        ProjectionService service=ProjectionService.get();
+        if(service != null && service.isRunning() && !isGameForeground())
+            service.pause("게임 밖 앱 전환 감지 · 자동 조작 정지");
+    }
     @Override public void onInterrupt() { }
 
     private int dp(float val) { return Math.round(val * getResources().getDisplayMetrics().density); }
@@ -77,6 +92,7 @@ public final class StairAccessibilityService extends AccessibilityService {
         bar.setBackgroundColor(0xB9222930);
         makeButton("계단 보정", bar, v -> startWizard());
         makeButton("이벤트 버튼 학습", bar, v -> startEventWizard());
+        makeButton("빨간 게이지 보정", bar, v -> startGaugeWizard());
         makeButton("모드 변경", bar, v -> {
             Prefs prefs = new Prefs(this);
             ModeProfile[] all = ModeProfile.values();
@@ -136,12 +152,19 @@ public final class StairAccessibilityService extends AccessibilityService {
     }
     private void startWizard() {
         eventWizard = false;
+        gaugeWizard = false;
         new Prefs(this).markCalibrated(false);
         startFrozenWizard();
     }
     private void startEventWizard() {
         eventWizard = true;
+        gaugeWizard = false;
         new Prefs(this).markEventPromptCalibrated(false);
+        startFrozenWizard();
+    }
+    private void startGaugeWizard() {
+        eventWizard=false;
+        gaugeWizard=true;
         startFrozenWizard();
     }
     private void startFrozenWizard() {
@@ -169,14 +192,14 @@ public final class StairAccessibilityService extends AccessibilityService {
         backdrop.setScaleType(ImageView.ScaleType.FIT_XY);
         wizard.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));
         hint=new TextView(this);
-        hint.setText(eventWizard
-                ? "이벤트 화면에서 '다시하기/계속' 등 안전한 버튼 중앙 1곳을 누르세요.\n결제·광고·보상 선택은 지정하지 마세요."
+        hint.setText(gaugeWizard ? "1/2: 상단 빨간 시간 게이지 바의 안쪽 왼쪽 끝을 터치하세요.\n테두리와 숫자는 피하세요."
+                : eventWizard ? "이벤트 화면에서 '다시하기/계속' 등 안전한 버튼 중앙 1곳을 누르세요.\n결제·광고·보상 선택은 지정하지 마세요."
                 : prompts[0] + "\n고정된 화면에서 9곳을 지정하세요 (게임이 뒤에서 진행돼도 괜찮습니다)");
         hint.setTextSize(16);
         hint.setTextColor(Color.WHITE);
         hint.setBackgroundColor(0xDD151515);
         hint.setPadding(dp(20),dp(12),dp(20),dp(12));
-        wizard.addView(hint,new FrameLayout.LayoutParams(-1,dp(128),Gravity.TOP));
+        wizard.addView(hint,new FrameLayout.LayoutParams(-1,dp(128),gaugeWizard ? Gravity.BOTTOM : Gravity.TOP));
         Button cancel = new Button(this);
         cancel.setText("취소"); cancel.setAllCaps(false);
         cancel.setOnClickListener(v -> closeWizard());
@@ -199,6 +222,23 @@ public final class StairAccessibilityService extends AccessibilityService {
     }
     private void onWizardTap(int x, int y) {
         if (frozenImage == null) return;
+        if (gaugeWizard) {
+            if(step==0) {
+                gaugeFirstX=x; gaugeFirstY=y; step=1;
+                hint.setText("2/2: 같은 게이지 바의 안쪽 오른쪽 끝을 터치하세요.");
+                return;
+            }
+            boolean saved;
+            try {
+                new Prefs(this).saveGaugeBounds(gaugeFirstX,gaugeFirstY,x,y,
+                        frozenImage.getWidth(),frozenImage.getHeight());
+                saved=true;
+            } catch (IllegalArgumentException ex) { saved=false; }
+            if(wizard!=null) {windowManager.removeView(wizard); wizard=null;}
+            frozenImage=null; gaugeWizard=false; showToolbar();
+            say(saved?"빨간 시간 게이지 보정 완료":"보정 실패 · 게이지 양 끝을 같은 높이에서 선택하세요");
+            return;
+        }
         if (eventWizard) {
             ProjectionService p = ProjectionService.get();
             boolean learned = p != null && p.learnEventPrompt(frozenImage,x,y);

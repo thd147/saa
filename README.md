@@ -1,3 +1,85 @@
+# StairPilot Mobile v1.4.0 — 빨간 시간 게이지 대응 고속·안전 패치
+
+> **중요:** Android APK 빌드는 아직 수행하지 못했습니다. Java SE 알고리즘 테스트만 통과했습니다. v1.3.0의 실기기 실행 가능성과 별개로 v1.4의 설치/동작은 검증이 필요합니다. **Google Play 프로텍트의 차단은 사용자 기기를 보호하기 위한 신호**이며 아이콘 변경이나 코드 패치만으로 해결되지 않습니다. 민감한 접근성 권한을 우회·강제 허용하지 마세요.
+
+## v1.4 핵심 변경
+
+- **상단 빨간 시간 게이지 인식(사용자 보정 필수)**: 게임 화면을 정지 캡처한 뒤 게이지 바의 **안쪽 왼쪽 끝→안쪽 오른쪽 끝** 두 번 터치해 범위 지정. 막대 내부의 붉은/주황색 픽셀을 세 줄로 검사하고, 띄엄띄엄한 색상이나 불확실한 결과는 버립니다. 게이지 인식에 실패하면 보조 고층 가속만 작동하며 읽지 못한 게이지를 0%라고 가정하지 않습니다.
+- **고층 가변 가속**: 성공 처리된 제스처 입력 횟수를 계단 높이의 *근사치*로 사용해 100·250·500·1,000·2,500회 이후 대기를 단계적으로 줄이고, 게이지가 75%/50%/30%/15% 미만이면 추가 단축. 사용자가 끌 수 있음. 이 횟수는 실제 계단 높이나 점수와 동일하지 않습니다.
+- **속도 프로필**: 일반 모드 기본 72ms, PVP 38ms, 이벤트 76ms, 협동전 110ms. 선택 가능한 입력 후 대기 범위 25~350ms이며 최종 하한은 24ms. **안드로이드의 터치 완료 콜백·게임 렌더링·화면 캡처·경로 분석 지연은 이 수치에 포함되지 않습니다.** 24ms마다 반드시 계단이 올라간다는 뜻이 아닙니다.
+- **안전한 고속 확정**: 좌우 패턴 차이가 뚜렷할 때만 1프레임 판단, 모호하면 2프레임 재확인. 인식이 흔들리거나 기기 열 상태가 높으면 지연을 추가합니다. 잘못된 연타를 무제한 발송하지 않습니다.
+- **장시간 보호**: 8초 프레임 중단, 제스처 2.5초 무응답, 화면 끔, 배터리 15% 미만, 열 상태 3 이상, 게임 밖 전환을 감지하면 중지. 30분마다 **안전 정지**하도록 변경하고 수동 확인 후 다시 시작해야 합니다. 24시간 무중단/발열 없음/계정 안전을 보증하지 않습니다.
+- **아이콘 통합**: 기존 StairPilot 계단 모양 아이콘을 Android mdpi~xxxhdpi, 적응형 아이콘용 리소스로 포함. `assets/`에 벡터 원본과 미리보기 포함. **기존 아이콘은 수작업 벡터 제작이며 AI 생성 이미지라고 주장하지 않습니다.**
+- **모드 정책**: PVP 계단 조작은 일반 계단 패턴에 한해 적용, 상대 분석·자동 매칭·승리 보장은 아님. 이벤트는 직접 학습시킨 '계속/다시하기' 버튼만 최대 3회 제한 자동 인식. 결제·광고·보상 선택은 자동화 안 함.
+
+## 권한 및 설치 안전
+
+앱은 기기 화면을 읽는 MediaProjection 및 다른 앱을 터치할 수 있는 접근성 서비스 권한을 요청합니다. 매우 민감한 기능이며 Play 프로텍트가 이를 차단할 수 있습니다. **차단 해제 절차나 보안 기능 우회보다, 코드를 검토하고 권한이 꼭 필요한지 확인하는 편이 안전합니다.** 네트워크 전송 권한이 없고 이미지 분석은 기기 안에서만 수행하도록 작성했지만, 코드를 신뢰하기 전에 직접 점검하세요.
+
+## 빨간 시간 게이지 보정 방법
+
+1. 스마트폰에서 기존 계단 9점 보정을 완료하고, 게임에 빨간 시간 게이지가 표시된 장면을 띄웁니다.
+2. 화면 공유를 시작한 상태에서 우측 플로팅 메뉴의 **빨간 게이지 보정**을 누릅니다.
+3. 고정된 화면에서 막대의 **색이 채워질 수 있는 영역의 맨 왼쪽 안쪽**과 **맨 오른쪽 안쪽**을 차례로 선택합니다. 수평 위치를 비슷하게 맞추고, 테두리·점수 숫자·일시정지 버튼은 피하세요.
+4. 제어판의 **가변 가속: 켜짐** 상태를 확인합니다. 게임을 다시 열어 보정된 방향에서 ▶ 시작합니다.
+5. 표시된 게이지가 이상하거나 방향이 틀리면 바로 ■ 정지하고 다시 보정합니다. 특정 모드에 시간 게이지가 없거나 디자인이 달라지면 가변 속도를 끄세요.
+
+## 장거리 검증 — 게임 플레이가 아닌 알고리즘 시뮬레이션
+
+명령어: `javac ... && java -cp tests/build LongClimbSimulationTest`
+
+| 테스트 | 가상 계단 패턴 | 예상/실제 분기 오류 | 결과 |
+|---|---:|---:|---|
+| 1차 | 50,000 | 0 | PASS |
+| 2차 | 100,000 | 0 | PASS |
+| 3차 | 200,000 | 0 | PASS |
+
+세 번의 테스트는 결정적 의사난수 패턴으로 `DecisionEngine`, 1프레임/2프레임 판정, `GaugePacer` 범위를 **총 350,000회** 호출하는 알고리즘 검증입니다. 실제 게임에서 5만·10만·20만 계단에 도달하거나 24시간 정상 플레이를 검증한 것이 **아닙니다**. 실제 속도와 연동되는 게이지 검출도 합성 픽셀 테스트만 수행했습니다.
+
+## GitHub `thd147/saa` 업데이트 (휴대폰 Codespaces)
+
+1. `StairPilotMobile-v1.4.0-android-source.zip`을 GitHub `saa` 저장소의 `main` 브랜치에 업로드하고 **Commit changes** 합니다. v1.2/v1.3 ZIP은 삭제하지 않습니다.
+2. Codespaces `verbose pancake`의 터미널에서:
+
+```bash
+git pull --ff-only origin main
+unzip -oq StairPilotMobile-v1.4.0-android-source.zip
+cp -a StairPilotMobile/. .
+rm -rf StairPilotMobile
+git add -A
+git commit -m "StairPilot Mobile v1.4 gauge adaptive speed"
+git push origin main
+```
+
+3. GitHub Actions의 **Build Android debug APK** 작업에서 빌드 성공 여부를 확인합니다. 성공 시 `StairPilot-debug-apk` 아티팩트의 `app-debug.apk`를 받습니다. GitHub Actions 디버그 APK는 빌드 환경별 서명이 달라 설치 업데이트가 안 될 수 있으며, 새 설치 시 보정 정보가 사라질 수 있습니다.
+
+## 테스트 실행 (Android SDK 없이)
+
+```bash
+mkdir -p tests/build
+javac -encoding UTF-8 -d tests/build \
+  app/src/main/java/io/stairpilot/{DecisionEngine,PromptGate,ModeProfile,AdaptivePacer,RunGuard,GaugeDetector,GaugePacer}.java \
+  tests/*.java
+for test in DecisionEngineTest PromptGateTest AdaptivePacerTest RunGuardTest GaugeDetectorTest GaugePacerTest LongClimbSimulationTest; do
+  java -cp tests/build "$test"
+done
+```
+
+## 참고
+
+- 원본 프로젝트: https://github.com/hykeegj/auto-play-game
+- 무한의 계단 게이지 공략: https://gamejay.net/667
+- 고득점 팁: https://www.inven.co.kr/board/mogong/4222/612?vtype=pc
+- Reddit 플레이 경험: https://www.reddit.com/r/AndroidGaming/comments/c37ub3
+- Android MediaProjection: https://developer.android.com/media/grow/media-projection
+- Android 접근성: https://developer.android.com/reference/android/accessibilityservice/AccessibilityService
+
+---
+
+# StairPilot Mobile v1.3.1 (앱 아이콘 패치)
+
+> v1.3.1 변경: 기본 안드로이드 앱 아이콘을 계단 테마의 자체 제작 아이콘으로 교체했습니다. 런처용 mdpi~xxxhdpi 및 Android 8+ adaptive icon 포함. **AI 이미지 생성 도구 오류로 아이콘은 직접 제작한 벡터 디자인이며, AI 생성 결과가 아닙니다.** 이번 패치는 아이콘만 변경하며 기존 v1.3.0의 속도·PVP·이벤트 기능은 유지합니다. Google Play 프로텍트의 차단 경고는 아이콘을 바꿔도 해결되지 않습니다. 미심쩍은 권한이나 출처를 우회하지 말고 먼저 검증하세요.
+
 # StairPilot Mobile v1.3.0 — 무한의 계단 모바일 화면 매크로 (실험용)
 
 Android 10 이상 / Java + Android SDK / 루팅·PC 연결 없이 화면 공유(MediaProjection)와 접근성 서비스 제스처를 사용하는 오프라인 앱. **게임 화면에 대한 사용자별 보정과 실제 기기 테스트가 필요합니다.** 게임 프로그램 자체를 변경하지 않습니다. 게임 이용약관이나 대전 공정성을 확인하세요.

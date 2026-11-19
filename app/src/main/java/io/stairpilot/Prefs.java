@@ -7,16 +7,38 @@ import android.content.SharedPreferences;
 public final class Prefs {
     private final SharedPreferences p;
     public Prefs(Context context) { p = context.getSharedPreferences("stairpilot", Context.MODE_PRIVATE); }
+    /** Explicit opt-in; prolonged use is never guaranteed safe or continuous. */
+    public boolean extendedSession() { return p.getBoolean("extended_14",false); }
+    public void setExtendedSession(boolean enabled) { p.edit().putBoolean("extended_14",enabled).apply(); }
+    public boolean adaptiveSpeed() { return p.getBoolean("adaptive_speed_14", true); }
+    public void setAdaptiveSpeed(boolean v) { p.edit().putBoolean("adaptive_speed_14",v).apply(); }
+    public boolean gaugeCalibrated() { return p.getBoolean("gauge_calibrated_14",false); }
+    public void saveGaugeBounds(int x1,int y1,int x2,int y2,int w,int h) {
+        if(w<1 || h<1 || Math.abs(x2-x1)<36 || Math.abs(y2-y1)>Math.max(16,h/60))
+            throw new IllegalArgumentException("게이지 양 끝을 같은 줄에서 지정하세요");
+        p.edit().putFloat("gx1_14",x1/(float)w).putFloat("gx2_14",x2/(float)w)
+                .putFloat("gy1_14",y1/(float)h).putFloat("gy2_14",y2/(float)h)
+                .putInt("gw_14",w).putInt("gh_14",h)
+                .putBoolean("gauge_calibrated_14",true).apply();
+    }
+    public boolean sameGaugeResolution(int w,int h) {
+        return gaugeCalibrated() && Math.abs(w-p.getInt("gw_14",-1))<=2
+                && Math.abs(h-p.getInt("gh_14",-1))<=2;
+    }
+    public int gaugeX1(int w) { return Math.round(p.getFloat("gx1_14",.1f)*w); }
+    public int gaugeY1(int h) { return Math.round(p.getFloat("gy1_14",.05f)*h); }
+    public int gaugeX2(int w) { return Math.round(p.getFloat("gx2_14",.8f)*w); }
+    public int gaugeY2(int h) { return Math.round(p.getFloat("gy2_14",.05f)*h); }
     public ModeProfile mode() {
         try { return ModeProfile.valueOf(p.getString("mode_v13", "NORMAL")); }
         catch (IllegalArgumentException e) { return ModeProfile.NORMAL; }
     }
     public void setMode(ModeProfile m) { p.edit().putString("mode_v13", m.name()).apply(); }
     /** Delay is applied after gesture acknowledgement; OS rendering time is additional. */
-    public int delayMs() { return Math.max(45, Math.min(350,
+    public int delayMs() { return Math.max(25, Math.min(350,
             p.getInt("delay13_" + mode().name(), mode().defaultDelayMs))); }
     public void setDelay(int ms) { p.edit().putInt("delay13_" + mode().name(),
-            Math.max(45, Math.min(350, ms))).apply(); }
+            Math.max(25, Math.min(350, ms))).apply(); }
     public int tapDurationMs() { return mode().tapMs; }
     public boolean eventAutoContinue() { return p.getBoolean("event_auto_continue13", false); }
     public void setEventAutoContinue(boolean enabled) { p.edit().putBoolean("event_auto_continue13", enabled).apply(); }

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#080f30"/><stop offset="0.52" stop-color="#24205b"/><stop offset="1" stop-color="#512b83"/></linearGradient>
+ <radialGradient id="halo"><stop offset="0" stop-color="#4e5bd5" stop-opacity=".52"/><stop offset=".58" stop-color="#47209f" stop-opacity=".32"/><stop offset="1" stop-color="#0b0731" stop-opacity="0"/></radialGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2=".2" y2="1"><stop offset="0" stop-color="#ffec91"/><stop offset=".24" stop-color="#ffcf4d"/><stop offset=".7" stop-color="#ff9b2c"/><stop offset="1" stop-color="#df5a36"/></linearGradient>
+ <linearGradient id="tread" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6ad"/><stop offset=".44" stop-color="#ffe873"/><stop offset="1" stop-color="#f9a33c"/></linearGradient>
+ <linearGradient id="side" x1="0" y1="0" x2="1" y2=".25"><stop offset="0" stop-color="#e66b27"/><stop offset="1" stop-color="#c43d49"/></linearGradient>
+ <linearGradient id="teal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c1fff0"/><stop offset="1" stop-color="#39e4ef"/></linearGradient>
+</defs>
+<rect width="1024" height="1024" rx="234" fill="url(#bg)"/>
+<path d="M 65 350 Q 110 90 370 65 L 435 65 Q 130 245 105 525Z" fill="#7669ec" opacity=".1"/>
+<path d="M 870 640 Q 925 470 950 440 L 950 794 Q 920 885 840 926 L 722 948Z" fill="#070d35" opacity=".18"/>
+<circle cx="531" cy="510" r="445" fill="url(#halo)"/>
+<circle cx="510" cy="516" r="348" fill="none" stroke="#a085ff" stroke-opacity=".18" stroke-width="8" />
+<circle cx="510" cy="516" r="302" fill="none" stroke="#78ebf7" stroke-opacity=".12" stroke-width="3" stroke-dasharray="26 24"/>
+<!-- Atmospheric rays -->
+<path d="M226 766 Q 440 830 754 666" stroke="#46f5ef" stroke-opacity=".18" stroke-width="38" stroke-linecap="round" fill="none"/>
+<path d="M288 836 Q 530 910 785 738" stroke="#67f1ff" stroke-opacity=".12" stroke-width="16" stroke-linecap="round" fill="none"/>
+<!-- staircase shadow outline -->
+<path d="M 239 792 L 239 657 L 336 657 L 336 558 L 433 558 L 433 461 L 530 461 L 530 364 L 650 364 L 723 314 L 785 359 L 785 748 L 710 803 Z" fill="#080c31" stroke="#10173d" stroke-width="26" stroke-linejoin="round" opacity=".62"/>
+<!-- stair block 5, highest -->
+<path d="M 550 340 L 610 293 L 748 293 L 688 340 Z" fill="url(#tread)" stroke="#1b2455" stroke-width="11" stroke-linejoin="round"/>
+<path d="M 688 340 L 748 293 L 748 410 L 688 459Z" fill="url(#side)" stroke="#1b2455" stroke-width="11" stroke-linejoin="round"/>
+<path d="M 550 340 L 688 340 L 688 459 L 550 459 Z" fill="url(#gold)" stroke="#1b2455" stroke-width="11" stroke-linejoin="round"/>
+<!-- stair block 4 -->
+<path d="M 454 442 L 514 395 L 652 395 L 592 442 Z" fill="url(#tread)" stroke="#1b2455" stroke-width="11" stroke-linejoin="round"/>
+<path d="M 592 442 L 652 395 L 652 512 L 592 561 Z" fill="url(#side)" stroke="#1b2455" stroke-width="11" stroke-linejoin="round"/>
+<path d="M 454 442 L 592 442 L 592 561 L 454 561 Z" fill="url(#gold)" stroke="#1b2455" stroke-width="11" stroke-linejoin="round"/>
+<!-- stair block 3 -->
+<path d="M 358 544 L 418 497 L 556 497 L 496 544 Z" fill="url(#tread)" stroke="#1b2455" stroke-width="11" stroke-linejoin="round"/>
+<path d="M 496 544 L 556 497 L 556 614 L 496 663 Z" fill="url(#side)" stroke="#1b2455" stroke-width="11" stroke-linejoin="round"/>
+<path d="M 358 544 L 496 544 L 496 663 L 358 663 Z" fill="url(#gold)" stroke="#1b2455" stroke-width="11" stroke-linejoin="round"/>
+<!-- stair block 2 -->
+<path d="M 262 646 L 322 599 L 460 599 L 400 646 Z" fill="url(#tread)" stroke="#1b2455" stroke-width="11" stroke-linejoin="round"/>
+<path d="M 400 646 L 460 599 L 460 716 L 400 765 Z" fill="url(#side)" stroke="#1b2455" stroke-width="11" stroke-linejoin="round"/>
+<path d="M 262 646 L 400 646 L 400 765 L 262 765 Z" fill="url(#gold)" stroke="#1b2455" stroke-width="11" stroke-linejoin="round"/>
+<!-- cyan glint on steps -->
+<path d="M 278 646 L 386 646 M 374 544 L 482 544 M 470 442 L 578 442 M 566 340 L 674 340" stroke="#fff8d4" stroke-opacity=".75" stroke-width="7" stroke-linecap="round"/>
+<path d="M 272 778 Q 443 832 693 586" fill="none" stroke="#69ffff" stroke-width="15" stroke-linecap="round" opacity=".55"/>
+<!-- stylized rising cyan spark -->
+<path d="M 684 208 L 700 247 L 739 262 L 700 278 L 684 318 L 668 278 L 628 262 L 668 247Z" fill="url(#teal)" stroke="#1b225c" stroke-width="9" stroke-linejoin="round"/>
+<path d="M 251 387 L 262 410 L 286 422 L 262 434 L 251 458 L 238 434 L 214 422 L 238 410Z" fill="#ffe96e"/>
+<path d="M 791 534 L 801 556 L 821 566 L 801 577 L 791 600 L 780 577 L 760 566 L 780 556Z" fill="#8dfdf4"/>
+<circle cx="345" cy="275" r="10" fill="#8bf5fa" opacity=".92"/><circle cx="785" cy="376" r="7" fill="#ffe992" opacity=".95"/>
+<circle cx="663" cy="744" r="8" fill="#95f7ff" opacity=".85"/>
+<rect x="9" y="9" width="1006" height="1006" rx="225" stroke="#e0c6ff" stroke-opacity=".16" stroke-width="18" fill="none"/>
+</svg>

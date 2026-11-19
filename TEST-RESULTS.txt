@@ -1,0 +1,9 @@
+PASS: basic control, 2-frame smoothing, 3-step lookahead, ambiguity, no-evidence stop
+PASS prompt gating rearm, debounce, cooldown, cap
+AdaptivePacerTest OK
+RunGuardTest OK
+GaugeDetectorTest OK: 5 synthetic fills + 3 rejection cases
+GaugePacerTest OK
+SIMULATED 50,000 steps: PASS; wrong=0, turns=7,522, extra-confirm=2,024, fast-confirm=47,976, low-gauge=7522, delay-range=24..107ms, compute=22ms
+SIMULATED 100,000 steps: PASS; wrong=0, turns=29,928, extra-confirm=3,986, fast-confirm=96,014, low-gauge=15044, delay-range=24..99ms, compute=17ms
+SIMULATED 200,000 steps: PASS; wrong=0, turns=90,089, extra-confirm=8,109, fast-confirm=191,891, low-gauge=30089, delay-range=24..107ms, compute=15ms
